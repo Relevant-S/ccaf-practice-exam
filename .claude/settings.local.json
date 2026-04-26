@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:/Projects/ccaf-practice-exam/skills/agent-ccaf-tutor/assets/question-bank\")",
+      "Bash(mkdir -p \"C:/Projects/ccaf-practice-exam/skills/agent-ccaf-tutor/assets/syllabus\")",
+      "Bash(grep -v \":0$\")",
+      "Bash(python3 \"C:/Projects/ccaf-practice-exam/.claude/skills/bmad-agent-builder/scripts/scan-path-standards.py\" \"C:/Projects/ccaf-practice-exam/skills/agent-ccaf-tutor\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('STATUS:',d.get\\('status'\\),'\\\\nFINDINGS:',len\\(d.get\\('findings',[]\\)\\)\\); [print\\(f\\\\\"  [{f['severity']}] {f['file']}:{f.get\\('line','?'\\)} - {f['title']}\\\\\"\\) for f in d.get\\('findings',[]\\)]\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('STATUS:',d.get\\('status'\\),'FINDINGS:',len\\(d.get\\('findings',[]\\)\\)\\); [print\\(f\\\\\"  [{f['severity']}] {f['file']}:{f.get\\('line','?'\\)} - {f['title']}\\\\\"\\) for f in d.get\\('findings',[]\\)]\")",
+      "Bash(python3 \"C:/Projects/ccaf-practice-exam/.claude/skills/bmad-agent-builder/scripts/scan-scripts.py\" \"C:/Projects/ccaf-practice-exam/skills/agent-ccaf-tutor\")",
+      "Bash(python3 *)"
+    ]
+  }
+}
