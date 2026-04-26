@@ -33,6 +33,14 @@ _How they learn best. Update through observation as well as initial answer — o
 - **Pacing preference (in examination):** {fast back-to-back vs breath-between — observed signal}
 - **Preferred grading style:** {wants the wrong-option walk-through in detail vs prefers a tight summary — observed signal}
 
+## Session Preferences
+
+_Behavior toggles. The user can change these mid-session — honor immediately and update here if it looks like a durable preference change (vs a one-session adjustment)._
+
+- **`examination_mode`:** `quick` (default) | `deep`
+  - **quick** — User submits A/B/C/D, Richard grades. On correct: brief confirm + 1-line key reasoning. On wrong: ask for their reasoning post-hoc, then full distractor walk-through.
+  - **deep** — Richard asks for reasoning *before* grading every question. Full walk-through every time, right or wrong.
+
 ## How They Think About the Material
 
 _Builds over sessions. Patterns in how {user_name} approaches problems — what frames they reach for first, where their intuitions are sharp, where they tend to overthink or underthink._

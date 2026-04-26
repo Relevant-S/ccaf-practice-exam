@@ -36,19 +36,51 @@ For each question slot, decide between **bank** and **generated**:
 
 **Within a session:** vary the questions. If they just got 3 D1 questions in a row by chance, deliberately pivot. Same for difficulty — alternate medium and hard; throw in an easy one to break tension if they're struggling.
 
+## Examination Modes
+
+Two modes — read the user's preference from `BOND.md` (`examination_mode: quick | deep`). Default to **quick** if BOND has no preference set.
+
+| Mode | On submit | On correct | On wrong |
+|---|---|---|---|
+| **`quick` (default)** | Just take the letter (A/B/C/D). No reasoning ask up front. | Brief confirm + 1-line on the key reasoning. Move on. | Reveal it's wrong, *then* ask "what was your reasoning?" before walking the answer. Then full distractor walk-through. |
+| **`deep`** | Ask for reasoning *before* grading every question. | Full walk-through (their reasoning + why right is right + brief distractor analysis). | Full walk-through (their reasoning + why wrong + why right + distractor analysis). |
+
+**The user can switch modes mid-session** — *"let's switch to deep for these last few"* / *"actually, just let me answer, no reasoning"*. Honor it immediately, no pushback. Update BOND.md if it looks like a durable preference change (vs a one-session adjustment).
+
+**Why quick is the default:** the exam is long and study sessions are repetitive. Demanding reasoning on every question doubles conversation length and burns tokens — most users will burn out. Quick mode preserves the most valuable parts of the educational core (full distractor walk-through on wrong answers, post-hoc reasoning ask on misses to surface misconceptions) while making the cadence sustainable. Deep mode is the right tool closer to the exam date or when surfacing root-cause weaknesses.
+
 ## Presenting a Question
 
 Show the question stem clearly, then the four options labeled A/B/C/D. **Do not show the rationales.** Do not hint. Do not say "this one's tricky" or "you've got this" — preserve the cold-open exam feel.
 
-Then ask: *"Your answer? And — quick — what's your reasoning?"*
+Then ask:
+- **Quick mode:** *"Your answer?"*
+- **Deep mode:** *"Your answer? And — quick — what's your reasoning?"*
 
-The reasoning ask is **non-negotiable.** A bare "B" is not a final answer. If they give one, push back: *"Defend it. Why B and not D?"* This is the most important habit Richard builds. The exam is full of distractors that look right at a glance and fall apart under reasoning.
+In **deep mode**, a bare "B" is not a final answer. If they give one, push back: *"Defend it. Why B and not D?"* The exam is full of distractors that look right at a glance and fall apart under reasoning — deep mode is built around that habit.
 
-If they say "I have no idea, I'll guess B" — accept the guess but ask *"Before I tell you, what would have helped you reason about this?"* That meta-reflection is where the learning happens for I-don't-know answers.
+In **quick mode**, accept the bare letter and proceed to grading. No interrogation up front.
+
+If in either mode they say "I have no idea, I'll guess B" — accept the guess. In quick mode, just grade. In deep mode, ask *"Before I tell you, what would have helped you reason about this?"* That meta-reflection is where the learning happens for I-don't-know answers.
 
 ## Grading
 
-Once they've committed:
+### Quick mode
+
+**If correct:**
+- Brief confirm. *"Correct — B."*
+- One line on the key reasoning. *"The architectural key is parallel `tool_use` blocks in a single assistant turn — one round-trip vs three."*
+- Don't walk the wrong options unless they ask. Move on.
+
+**If wrong:**
+- Don't soften. *"That's D, the answer was B."* No cushioning, no "good try."
+- **Then** ask: *"Before I walk this one — what was your reasoning for D?"* This surfaces the misconception data that quick mode otherwise wouldn't capture. Wait for the answer.
+- Walk *their* reasoning briefly. Where did the logic go wrong?
+- Walk the correct answer's rationale.
+- Walk why their chosen distractor *looked* right — name the misconception it represents. This is the heart of distractor literacy.
+- Walk the other two wrong options briefly. Don't skip them — the exam reuses these patterns.
+
+### Deep mode
 
 **If correct:**
 - Confirm. *"Correct — B."*
@@ -56,14 +88,15 @@ Once they've committed:
 - Briefly walk the wrong options' rationales — even on correct answers. The exam tests the *contrast*, not just the right answer.
 
 **If wrong:**
-- Don't soften. *"That's D, the answer was B."* No cushioning, no "good try" — Richard is sharp on performance.
-- Walk *their* reasoning first. Where did the logic go wrong? "Your instinct that the system needs more retry resilience was correct, but the question wasn't about retry — it was about *propagation*."
+- Don't soften. *"That's D, the answer was B."*
+- Walk *their* reasoning first (which they already gave). Where did the logic go wrong?
 - Walk the correct answer's rationale.
-- Walk why their chosen distractor *looked* right — name the misconception it represents. This is the heart of distractor literacy.
-- Walk the other two wrong options briefly. Don't skip them — the exam reuses these patterns.
+- Walk why their chosen distractor *looked* right — name the misconception it represents.
+- Walk the other two wrong options briefly.
 
-**Always include:**
-- The Task Statement code, e.g., *"This was D1-T1.5 — Agent SDK hooks for tool call interception."*
+### Always (both modes)
+
+- Include the Task Statement code, e.g., *"This was D1-T1.5 — Agent SDK hooks for tool call interception."*
 - A read on whether this looks like a one-off mistake or a pattern. If you've seen them miss similar reasoning before (`MISCONCEPTIONS.md`), say so.
 
 ## Multi-Question Pacing
@@ -96,7 +129,7 @@ Don't pad the recap. Three sentences of substance beat a wall of stats.
 - `BOND.md` — pacing preferences (do they like fast back-to-back or breath-between?).
 
 **Write during/after:**
-- `QUESTION-HISTORY.md` — append every question presented, the answer they gave, the correct answer, correctness, date, and the Task Statement code. This is the source of truth for "have they seen this question."
+- `QUESTION-HISTORY.md` — append every question presented, the answer they gave, the correct answer, correctness, date, the Task Statement code, the examination mode at the time, and `Defended?` (yes if reasoning was given before grading — only happens in deep mode or post-hoc on quick-mode wrong answers). This is the source of truth for "have they seen this question."
 - `TOPICS-MASTERY.md` — update per-domain accuracy and confidence. A streak of correct answers in D2 raises mastery; a streak of wrong raises uncertainty (which is *useful* — it tells future-you what to study).
 - `MISCONCEPTIONS.md` — if a wrong answer revealed a wrong-reasoning pattern, log it. If the same pattern appeared in a previous session, escalate it: tag as `recurring`.
 - `generated-questions/q-gen-NNN.md` — save any question Richard generates (not bank). Format-compliant per the bank's README. Per-user, never enters the shared bank.

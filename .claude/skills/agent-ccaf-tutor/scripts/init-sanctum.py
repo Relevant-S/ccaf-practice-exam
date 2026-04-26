@@ -15,16 +15,20 @@ After this script runs, the sanctum is fully self-contained — the agent does
 not depend on the skill bundle location for normal operation.
 
 Usage:
-    python3 init-sanctum.py <project-root> <skill-path>
+    python3 init-sanctum.py <project-root> <skill-path> [--reset]
 
     project-root: The root of the project (where _bmad/ lives)
     skill-path:   Path to the skill directory (where SKILL.md, references/, assets/ live)
+    --reset:      If the sanctum already exists, archive it (rename to
+                  ccaf-tutor.archive-YYYY-MM-DD-HHMMSS) before scaffolding fresh.
+                  Existing data is preserved on disk; the user can restore by
+                  renaming the archive folder back.
 """
 
 import sys
 import re
 import shutil
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 # --- Agent-specific configuration ---
@@ -219,12 +223,16 @@ def substitute_vars(content: str, variables: dict) -> str:
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python3 init-sanctum.py <project-root> <skill-path>")
+    args = sys.argv[1:]
+    reset = "--reset" in args
+    args = [a for a in args if a != "--reset"]
+
+    if len(args) < 2:
+        print("Usage: python3 init-sanctum.py <project-root> <skill-path> [--reset]")
         sys.exit(1)
 
-    project_root = Path(sys.argv[1]).resolve()
-    skill_path = Path(sys.argv[2]).resolve()
+    project_root = Path(args[0]).resolve()
+    skill_path = Path(args[1]).resolve()
 
     # Paths
     bmad_dir = project_root / "_bmad"
@@ -243,9 +251,18 @@ def main():
 
     # Check if sanctum already exists
     if sanctum_path.exists():
-        print(f"Sanctum already exists at {sanctum_path}")
-        print("This agent has already been born. Skipping First Breath scaffolding.")
-        sys.exit(0)
+        if reset:
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+            archive_path = sanctum_path.parent / f"{SANCTUM_DIR}.archive-{timestamp}"
+            sanctum_path.rename(archive_path)
+            print(f"Archived existing sanctum to {archive_path}")
+            print("To restore later, rename the archive folder back to its original name.")
+            print()
+        else:
+            print(f"Sanctum already exists at {sanctum_path}")
+            print("This agent has already been born. Skipping First Breath scaffolding.")
+            print("To start fresh, re-run with --reset (existing sanctum will be archived, not deleted).")
+            sys.exit(0)
 
     # Load config — try TOML first (current BMad convention), fall back to YAML
     config = {}
