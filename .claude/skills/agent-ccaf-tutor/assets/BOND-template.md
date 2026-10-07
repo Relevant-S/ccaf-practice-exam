@@ -13,16 +13,16 @@ _Filled in during First Breath. The single most important section — drives eve
 - **Weekly study cadence:** {hours per week, realistic — not aspirational}
 - **Days remaining as of last session:** {recompute on each session, surface in `progress` capability when relevant}
 
-## Background Snapshot
+## Starting Point
 
-_Their hands-on experience with each of the four core technologies. Calibrates the starting depth for tutoring per domain._
+_From the placement in First Breath or the study map (see `assets/placement.md`). Decides how every explanation is pitched. Redo on request; overwrite and note the date._
 
-| Technology | Level | Notes |
-|---|---|---|
-| Claude API | {solid / some / minimal / none} | |
-| Claude Agent SDK | {solid / some / minimal / none} | |
-| Claude Code | {solid / some / minimal / none} | |
-| Model Context Protocol (MCP) | {solid / some / minimal / none} | |
+- **Role:** {dev / qa / ops / pm / design / other, plus their own words}
+- **Track:** {A Newcomer / B Some background / C Builder}
+- **Basics gaps:** {e.g. B2 Git & PRs, B4 JSON, or none}
+- **Has done:** {experience codes, e.g. e_chat, e_api}
+- **Placement:** {date, and source: first-breath or map}
+- **Track C only, production vs docs per technology:** {Claude Code / API / Agent SDK / MCP}
 
 ## Learning Style
 

@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CCAF Study Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a pannable bubble map on the left, the lesson panel on the right; stacked on phones. */
+:root {
+  --bg: #f3f2ee;
+  --surface: #fbfaf7;
+  --ink: #1d2230;
+  --ink-soft: #545b6b;
+  --line: #c9c6bd;
+  --track: #e2dfd7;
+  --focus: #2b5bd7;
+  --good: #2f7d4f;
+  --bad: #b23a3a;
+  --d1: #4b5bd6; --d2: #148a8a; --d3: #c27a12; --d4: #9a3f8f; --d5: #3d7f2e; --b0: #4f6d8a;
+  --scen: #6b7280;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171f; --surface: #1b1f29; --ink: #e8e9ee; --ink-soft: #a3a9b8;
+    --line: #3a4050; --track: #2a2f3b; --focus: #7aa2ff; --good: #5fc287; --bad: #ef7b7b;
+    --d1: #8c97ff; --d2: #3fc4c4; --d3: #f0a83a; --d4: #d27fc8; --d5: #7cc46a; --scen: #9aa1ad; --b0: #8fb3d6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171f; --surface: #1b1f29; --ink: #e8e9ee; --ink-soft: #a3a9b8;
+  --line: #3a4050; --track: #2a2f3b; --focus: #7aa2ff; --good: #5fc287; --bad: #ef7b7b;
+  --d1: #8c97ff; --d2: #3fc4c4; --d3: #f0a83a; --d4: #d27fc8; --d5: #7cc46a; --scen: #9aa1ad; --b0: #8fb3d6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--font-body); }
+button { font: inherit; color: inherit; }
+a { color: var(--focus); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+header.bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.brand { font: 700 1.25rem/1.1 var(--font-display); letter-spacing: -0.01em; margin: 0; }
+.brand small { display: block; font: 400 0.78rem/1.3 var(--font-body); color: var(--ink-soft); letter-spacing: 0; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 0.9rem; min-width: 0; }
+.crumbs button { background: none; border: 0; padding: 2px 6px; border-radius: 6px; cursor: pointer; color: var(--ink-soft); }
+.crumbs button:hover { background: var(--track); color: var(--ink); }
+.crumbs button[aria-current="true"] { color: var(--ink); font-weight: 700; }
+.crumbs span { color: var(--line); }
+.bar-tools { margin-left: auto; display: flex; gap: 8px; }
+.tool { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 4px 10px; font-size: 0.85rem; cursor: pointer; }
+.tool:hover { border-color: var(--ink-soft); }
+
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+#map { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+#map.dragging { cursor: grabbing; }
+.legend { position: absolute; left: 12px; bottom: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.78rem; display: grid; gap: 4px; max-width: calc(100% - 24px); }
+.legend .row { display: flex; align-items: center; gap: 8px; }
+.legend svg { flex: none; }
+
+.node { cursor: pointer; }
+.node text { font-family: var(--font-body); fill: var(--ink); pointer-events: none; }
+.node .label { font-size: 13px; font-weight: 700; }
+.node .sub { font-size: 11px; fill: var(--ink-soft); }
+.node .code { font-family: var(--font-mono); font-weight: 600; }
+.node.dim { opacity: 0.45; }
+.node .halo { fill: none; stroke: var(--focus); stroke-width: 3; opacity: 0; }
+.node.is-focus .halo { opacity: 1; }
+.node:focus-visible { outline: none; }
+.node:focus-visible .halo { opacity: 1; stroke-dasharray: 4 3; }
+.edge { fill: none; stroke: var(--line); stroke-width: 2; }
+.edge.related { stroke-dasharray: 3 5; stroke-width: 1.6; }
+
+aside.panel { border-left: 1px solid var(--line); background: var(--surface); overflow-y: auto; min-height: 0; }
+.panel-inner { padding: 22px 24px 48px; display: grid; gap: 22px; }
+.eyebrow { font: 600 0.72rem/1.2 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); display: flex; gap: 10px; flex-wrap: wrap; }
+.eyebrow .chip { padding: 2px 8px; border-radius: 99px; background: var(--track); color: var(--ink); }
+.panel h2 { font: 700 1.6rem/1.15 var(--font-display); margin: 6px 0 0; text-wrap: balance; letter-spacing: -0.01em; }
+.panel h3 { font: 700 1.02rem/1.3 var(--font-display); margin: 0 0 8px; }
+.panel p { margin: 0 0 10px; max-width: 62ch; }
+.panel ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.panel section { display: grid; gap: 4px; }
+code { font: 0.86em var(--font-mono); background: var(--track); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+pre { font: 0.82rem/1.5 var(--font-mono); background: var(--track); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0 0; }
+.drift { border-left: 3px solid var(--d3); background: color-mix(in srgb, var(--d3) 10%, var(--surface)); padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 0.92rem; }
+.drift b { display: block; font-family: var(--font-display); }
+.weights { display: grid; gap: 6px; }
+.weights button { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) 3em; align-items: center; gap: 8px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.weights .bar { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; }
+.weights .bar i { display: block; height: 100%; }
+.weights .pct { font: 0.85rem var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+details.case { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+details.case + details.case { margin-top: 8px; }
+details.case summary { cursor: pointer; padding: 10px 12px; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details.case summary::-webkit-details-marker { display: none; }
+details.case summary::before { content: "+"; font: 700 1rem var(--font-mono); color: var(--ink-soft); width: 1ch; }
+details.case[open] summary::before { content: "−"; }
+details.case .scen { font: 0.72rem var(--font-mono); color: var(--ink-soft); margin-left: auto; white-space: nowrap; }
+details.case .body { padding: 0 14px 12px 32px; display: grid; gap: 8px; }
+.step { display: grid; grid-template-columns: 6.6em minmax(0, 1fr); gap: 8px; font-size: 0.95rem; }
+.step b { font: 600 0.72rem/1.9 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.step.wrong b { color: var(--bad); }
+.step.right b { color: var(--good); }
+details.case.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 4px var(--focus); } to { box-shadow: 0 0 0 0 transparent; } }
+
+.check { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+.check p { margin: 0; }
+.check .opts { display: grid; gap: 6px; }
+.check .opts button { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.check .opts button:hover:not(:disabled) { border-color: var(--ink-soft); }
+.check .opts button.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, var(--bg)); }
+.check .opts button.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, var(--bg)); }
+.check .why { font-size: 0.93rem; }
+.check .again { justify-self: start; background: none; border: 0; padding: 0; color: var(--focus); cursor: pointer; text-decoration: underline; font-size: 0.85rem; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 700; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 400; }
+.btn[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.note { font-size: 0.85rem; color: var(--ink-soft); }
+.copybox { font: 0.82rem var(--font-mono); width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--bg); color: var(--ink); resize: none; }
+.tasklist { display: grid; gap: 6px; }
+.tasklist button { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.tasklist button:hover { border-color: var(--ink-soft); }
+.tasklist .n { font: 600 0.75rem/1.6 var(--font-mono); color: var(--ink-soft); }
+
+.term { border-bottom: 1.5px dotted var(--ink-soft); cursor: help; }
+#tip { position: fixed; z-index: 10; max-width: 290px; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; pointer-events: none; }
+#tip b { display: block; }
+
+.plain { background: color-mix(in srgb, var(--b0) 12%, var(--surface)); border-radius: 10px; padding: 10px 12px; font-size: 1rem; }
+.plain b { font-family: var(--font-display); margin-right: 6px; }
+.bridge { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; }
+.bridge b { display: block; font-family: var(--font-display); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 3px 10px; font-size: 0.85rem; cursor: pointer; }
+.chips button:hover { border-color: var(--ink-soft); }
+.chips button.done { border-color: var(--good); }
+.chips button.done::after { content: " ✓"; color: var(--good); }
+.path { display: grid; gap: 4px; counter-reset: p; }
+.path button { display: grid; grid-template-columns: 1.8em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--track); padding: 6px 0; cursor: pointer; }
+.path button::before { counter-increment: p; content: counter(p); font: 600 0.8rem var(--font-mono); color: var(--ink-soft); }
+.path button .st { font-size: 0.78rem; color: var(--ink-soft); }
+.path button.done .st { color: var(--good); }
+.path button.next { font-weight: 700; }
+.path button.next .st { color: var(--focus); }
+.pin rect { fill: var(--focus); }
+.pin text { fill: #fff !important; font: 700 10px var(--font-body); letter-spacing: 0.06em; }
+
+.onb { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--ink) 45%, transparent); display: grid; place-items: center; padding: 16px; }
+.onb-card { width: min(620px, 100%); max-height: calc(100% - 8px); overflow-y: auto; background: var(--surface); border-radius: 16px; padding: 24px; display: grid; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.onb-card h2 { font: 700 1.5rem/1.2 var(--font-display); margin: 0; text-wrap: balance; }
+.onb-card p { margin: 0; }
+.onb-steps { font: 600 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.choices { display: grid; gap: 8px; }
+.choices button, .choices label { display: flex; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.choices button:hover, .choices label:hover { border-color: var(--ink-soft); }
+.choices input { width: 18px; height: 18px; accent-color: var(--focus); }
+.choices button.unsure { color: var(--ink-soft); font-style: italic; }
+.onb-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--focus); text-decoration: underline; cursor: pointer; font-size: 0.9rem; }
+.track { display: inline-block; font: 700 0.8rem var(--font-mono); padding: 3px 10px; border-radius: 99px; background: var(--ink); color: var(--bg); }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 56vh auto; height: auto; }
+  aside.panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .panel-inner { padding: 20px 16px 48px; }
+  header.bar { padding: 10px 16px; }
+  .bar-tools { margin-left: 0; }
+  .legend { font-size: 0.72rem; }
+}
+@media (prefers-reduced-motion: reduce) { details.case.flash { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <h1 class="brand">CCAF Study Map<small>Claude Certified Architect – Foundations · prototype: Domain 3</small></h1>
+    <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
+    <div class="bar-tools">
+      <button class="tool" id="placement" type="button">Placement</button>
+      <button class="tool" id="fit" type="button">Fit map</button>
+      <button class="tool" id="reset" type="button">Reset progress</button>
+    </div>
+  </header>
+  <div class="stage">
+    <svg id="map" role="group" aria-label="Study map. Use Tab to move between bubbles and Enter to open one."></svg>
+    <div class="legend" aria-label="Legend">
+      <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2"/></svg>Topic inside a topic</div>
+      <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2" stroke-dasharray="3 5"/></svg>Case or scenario linked to it</div>
+      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-pie"></svg>Ring: read · cases · self-check</div>
+    </div>
+  </div>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+<div id="tip" hidden></div>
+<div class="onb" id="onb" hidden role="dialog" aria-modal="true" aria-labelledby="onb-title"><div class="onb-card" id="onb-card"></div></div>
+
+<script>
+/* ---------- Glossary: plain definitions shown on hover or tap ---------- */
+const GLOSSARY = {
+  "claude code": ["Claude Code", "Anthropic's coding assistant that runs in your terminal or editor. It reads your project, runs commands and edits files."],
+  "claude.md": ["CLAUDE.md", "A plain Markdown file of instructions that Claude Code reads at the start of a session. Think of it as a briefing note."],
+  "skill": ["Skill", "A saved, reusable workflow for Claude Code, stored as a SKILL.md file. You run it by typing /its-name."],
+  "slash command": ["Slash command", "A shortcut you type in Claude Code, like /review. Custom ones are saved as files in the project or your home folder."],
+  "frontmatter": ["Frontmatter", "A small settings block at the very top of a Markdown file, between two lines of ---. It holds options like paths or context."],
+  "glob": ["Glob pattern", "A file-matching pattern. ** means any folders, * means any characters. **/*.test.tsx matches every test file in every folder."],
+  "subagent": ["Subagent", "A helper Claude session that gets its own task and its own memory, then returns only its result to the main session."],
+  "context": ["Context window", "Everything Claude can 'see' right now: instructions, the conversation, file contents. It has a size limit, so clutter pushes out useful detail."],
+  "plan mode": ["Plan mode", "A Claude Code mode where Claude can read and explore but not edit. It writes a plan; edits wait until you approve it."],
+  "ci/cd": ["CI/CD", "Continuous integration and delivery: automated jobs that run on every push or pull request, such as tests, builds and reviews. No human is at the keyboard."],
+  "version control": ["Version control", "Git and similar tools. Files committed to the repository are shared with everyone who clones it; files in your home folder are not."],
+  "home folder": ["Home folder", "Your personal folder on your own machine, written as ~. Files there are never shared through the repository."],
+  "distractor": ["Distractor", "A wrong answer option written to look right to someone with partial knowledge."],
+  "json schema": ["JSON Schema", "A description of the exact shape a JSON result must have: which fields, which types. Tools can check output against it."],
+  "pull request": ["Pull request", "A proposed change to a repository that others review before it is merged."],
+  "mcp": ["MCP", "Model Context Protocol: a standard way to connect Claude to outside systems (databases, ticket systems, APIs) as tools."],
+  "agent": ["Agent", "Claude working in a loop: it decides on a step, uses a tool, looks at the result, and decides the next step until the job is done."],
+  "git": ["Git", "A tool that keeps the full history of a project's files and lets a team share changes. GitHub is a website that hosts git projects."],
+  "repository": ["Repository (repo)", "A project folder tracked by git: all its files plus their history. Cloning it copies it to your machine."],
+  "terminal": ["Terminal", "A text window where you run programs by typing commands instead of clicking."],
+  "flag": ["Flag", "An option added to a command, starting with - or --. In claude -p, the -p is a flag."],
+  "json": ["JSON", "A text format for structured data, with named fields in curly braces. Programs read it reliably."],
+  "api": ["API", "A way for one program to ask another for something: send a request, get a response."],
+  "token": ["Token", "A piece of a word. Claude reads and writes text in tokens; the context window is measured in them."],
+  "pipeline": ["Pipeline", "A chain of automatic steps (build, test, review) that runs when code changes."],
+  "hook": ["Hook", "Your own code that runs automatically at a fixed moment, for example just before a tool runs. It can block an action, so it gives a guarantee a prompt cannot."]
+};
+
+/* ---------- Content ---------- */
+const SCENARIOS = [
+  { id: "s1", n: 1, name: "Support agent", title: "Customer Support Resolution Agent", text: "An agent handles returns, billing disputes and account issues. It reaches your systems through custom MCP tools such as get_customer, lookup_order, process_refund and escalate_to_human. The target is 80%+ of cases solved on first contact, while knowing when to hand over to a human.", domains: ["d1", "d2", "d5"] },
+  { id: "s2", n: 2, name: "Code generation", title: "Code Generation with Claude Code", text: "Your team uses Claude Code for writing code, refactoring, debugging and documentation. You set it up with custom slash commands and CLAUDE.md files, and you decide when to use plan mode and when to let it act directly.", domains: ["d3", "d5"] },
+  { id: "s3", n: 3, name: "Research system", title: "Multi-Agent Research System", text: "A coordinator agent hands work to specialist subagents: one searches the web, one analyses documents, one combines findings, one writes the report. The output is a full report with citations.", domains: ["d1", "d2", "d5"] },
+  { id: "s4", n: 4, name: "Dev productivity", title: "Developer Productivity with Claude", text: "An agent helps engineers explore unfamiliar codebases, understand legacy systems, generate boilerplate and automate repetitive tasks. It uses the built-in tools (Read, Write, Bash, Grep, Glob) and MCP servers.", domains: ["d2", "d3", "d1"] },
+  { id: "s5", n: 5, name: "CI pipeline", title: "Claude Code for Continuous Integration", text: "Claude Code runs inside the CI/CD pipeline. It reviews code automatically, writes test cases and comments on pull requests. Feedback must be useful, with few false alarms.", domains: ["d3", "d4"] },
+  { id: "s6", n: 6, name: "Data extraction", title: "Structured Data Extraction", text: "A system pulls information out of messy documents, checks the result against JSON schemas, and feeds it to other systems. It must stay accurate and handle odd cases well.", domains: ["d4", "d5"] }
+];
+
+const DOMAINS = [
+  { id: "d1", code: "D1", name: "Agentic Architecture & Orchestration", short: "Agents", weight: 27, color: "--d1", ready: false,
+    what: "How to build systems where Claude works in a loop: it picks a step, uses a tool, checks the result and carries on. Covers the agent loop, coordinators that hand work to helper agents (subagents), hooks that enforce hard rules, and resuming or forking sessions." },
+  { id: "d2", code: "D2", name: "Tool Design & MCP Integration", short: "Tools & MCP", weight: 18, color: "--d2", ready: false,
+    what: "How to give Claude tools it uses well: clear tool descriptions, useful error messages, connecting outside systems through MCP, and the built-in tools such as Read, Grep and Edit." },
+  { id: "d3", code: "D3", name: "Claude Code Configuration & Workflows", short: "Claude Code", weight: 20, color: "--d3", ready: true,
+    what: "How a team sets up Claude Code so it behaves the same for everyone: instruction files (CLAUDE.md), rules that apply only to some files, reusable skills and slash commands, choosing plan mode or direct action, steering Claude over several rounds, and running it inside automated pipelines.",
+    why: "About one question in five. The questions are practical: a teammate is not getting the team's instructions, a pipeline hangs, a skill floods the chat. You need to know which setting fixes which problem, and which look-alike setting does not.",
+    order: "Follow the numbered steps. Each one builds on the one before: where instructions live, then how to scope them, then reusable workflows, then how to run work, then how to steer it, then automation." },
+  { id: "d4", code: "D4", name: "Prompt Engineering & Structured Output", short: "Prompts & output", weight: 20, color: "--d4", ready: false,
+    what: "How to write prompts that give reliable results: explicit criteria, examples (few-shot), JSON schemas for structured output, checking and retrying output, and batch processing for large jobs." },
+  { id: "d5", code: "D5", name: "Context Management & Reliability", short: "Context & reliability", weight: 15, color: "--d5", ready: false,
+    what: "How to keep long conversations and multi-agent work reliable: what to keep in the context window, when to hand over to a human, how errors travel between agents, human review, and keeping track of where facts came from." }
+];
+
+const TASKS = [
+  {
+    id: "t3.1", code: "3.1", step: 1, domain: "d3", short: "CLAUDE.md levels", name: "Put instructions at the right level with CLAUDE.md",
+    what: "A {{claude.md}} file is a set of instructions that {{claude code}} reads at the start of every session. Where you save it decides who gets it. Claude Code reads every file it finds and combines them. No file switches another one off.",
+    why: "A classic exam question: something works for one person and not for a new teammate. The answer is almost always that the instruction lives at the wrong level.",
+    ideas: [
+      "<b>Your home folder</b> <code>~/.claude/CLAUDE.md</code>: only you, in every project. Never shared through {{version control}}.",
+      "<b>The project</b> <code>./CLAUDE.md</code> or <code>./.claude/CLAUDE.md</code>: committed to the repository, so everyone who clones it gets it.",
+      "<b>A subfolder</b> <code>packages/api/CLAUDE.md</code>: picked up when Claude works with files in that folder.",
+      "Keep files small and focused. Pull in other files with <code>@path/to/file.md</code> (paths are relative to the file that imports them).",
+      "If two files contradict each other, Claude may follow either one. Remove the conflict; don't expect one file to win.",
+      "The exam guide names the <code>/memory</code> command for checking which instruction files are loaded in a session."
+    ],
+    cases: [
+      { id: "c3.1a", label: "New teammate", scen: 2, title: "The new teammate gets none of the team's standards",
+        situation: "A senior developer wrote the team's API conventions. Claude follows them perfectly for her. A new teammate clones the repo, and Claude ignores all of it.",
+        tempting: "Send the teammate the file so they can save their own copy.",
+        works: "Move the conventions into the project's CLAUDE.md and commit it.",
+        why: "The file was in her home folder, which only she has. Copies would drift apart, and every new joiner would need the same manual step.",
+        trap: "Looks like a broken setup. It is an instruction at the wrong level." },
+      { id: "c3.1b", label: "Huge CLAUDE.md", scen: 4, title: "One 900-line CLAUDE.md for a big monorepo",
+        situation: "A monorepo has five packages, each with its own standards. Everything sits in one root CLAUDE.md, and Claude's answers are getting inconsistent.",
+        tempting: "Keep adding to the root file, and make the important lines louder.",
+        works: "Give each package a short CLAUDE.md that imports only the standards files it needs, using @path imports, or split topics into .claude/rules/ files.",
+        why: "Claude reads less that does not apply, and each team keeps its own part tidy.",
+        trap: "More text is not more control. Long files are followed less consistently." },
+      { id: "c3.1c", label: "Two laptops differ", scen: 2, title: "Claude behaves differently on two developers' machines",
+        situation: "The same repo and the same request, but Claude formats code differently for two developers.",
+        tempting: "Rewrite the project instructions in stronger words.",
+        works: "Check which instruction files each session has loaded (the guide names /memory for this). Look for a personal file or a conflicting line.",
+        why: "Diagnose before you change anything. A personal file or a contradiction is the usual cause.",
+        trap: "Rewording a file that may not even be the cause." }
+    ],
+    checks: [
+      { id: "k3.1a", q: "You want Claude to always answer you in British English, in every project, without changing anything for your teammates. Where does that go?",
+        opts: ["~/.claude/CLAUDE.md in your home folder", "The project's CLAUDE.md", "A rules file in .claude/rules/", "The project README"], a: 0,
+        why: "It is personal and should follow you everywhere, so it belongs in your home folder. The project file would change it for the whole team." },
+      { id: "k3.1b", q: "The project CLAUDE.md says “indent with tabs”. Your personal CLAUDE.md says “indent with spaces”. What happens?",
+        opts: ["The project file wins", "Your personal file wins", "Both are loaded, and Claude may follow either one", "Claude Code refuses to start"], a: 2,
+        why: "Files are combined, not ranked. With a contradiction, Claude may pick either. The fix is to remove the conflict." }
+    ],
+    docs: [["How Claude remembers your project (CLAUDE.md)", "https://code.claude.com/docs/en/memory"]]
+  },
+  {
+    id: "t3.3", code: "3.3", step: 2, domain: "d3", short: "Path rules", name: "Load rules only for the files they apply to",
+    what: "Instead of one big instruction file, you can save focused rule files in <code>.claude/rules/</code>, one topic per file. Add a <code>paths:</code> {{glob}} in the file's {{frontmatter}}, and the rule loads only when Claude reads or edits a matching file. A rule file with no paths loads at the start, like CLAUDE.md.",
+    why: "The exam asks you to choose between a rule with a file pattern, a CLAUDE.md in a subfolder, and the root CLAUDE.md. The deciding question: does the convention follow a <i>type of file</i>, one <i>folder</i>, or the <i>whole codebase</i>?",
+    ideas: [
+      "A rule file looks like this:<pre>---\npaths: [\"**/*.test.tsx\"]\n---\nUse React Testing Library. One behaviour per test.</pre>",
+      "Use a pattern when files of one kind are spread across many folders, such as test files or migrations.",
+      "Use a subfolder CLAUDE.md when the convention belongs to one folder.",
+      "Use the root CLAUDE.md when it applies everywhere.",
+      "Rules that load only when needed keep the {{context}} free for the work."
+    ],
+    cases: [
+      { id: "c3.3a", label: "Tests everywhere", scen: 2, title: "Test conventions for test files in 40 folders",
+        situation: "Test files live next to the code they test, across 40 folders. The team wants one set of testing conventions applied to all of them.",
+        tempting: "Put a CLAUDE.md with the same text into each of the 40 folders.",
+        works: "One file, .claude/rules/testing.md, with paths: [\"**/*.test.tsx\"].",
+        why: "The convention follows the file type, not a folder. One rule covers every test file, wherever it is.",
+        trap: "Forty copies that slowly drift apart." },
+      { id: "c3.3b", label: "Terraform noise", scen: 2, title: "Infrastructure rules clutter front-end work",
+        situation: "The root CLAUDE.md has 150 lines about Terraform. Front-end developers carry all of it in every session.",
+        tempting: "Leave it. It does no harm.",
+        works: "Move it to .claude/rules/terraform.md with paths: [\"terraform/**/*\"].",
+        why: "It now loads only when someone works on Terraform files. Everyone else gets a cleaner context.",
+        trap: "Irrelevant instructions are not free. They take space and attention." },
+      { id: "c3.3c", label: "Pattern too narrow", scen: 4, title: "A company-wide API error format",
+        situation: "Every part of the code must use the same API error format: the server, the client library and the tests.",
+        tempting: "A rule with paths: [\"src/api/**\"], because it is about the API.",
+        works: "Put it in the root CLAUDE.md.",
+        why: "The convention applies everywhere. A narrow pattern means it silently goes missing when someone writes a client outside src/api.",
+        trap: "A file pattern narrower than the convention's real reach." }
+    ],
+    checks: [
+      { id: "k3.3a", q: "When does a rule file with paths: [\"**/*.sql\"] get loaded?",
+        opts: ["At the start of every session", "When Claude reads or edits a .sql file", "Only when you type /rules", "When a .sql file is committed"], a: 1,
+        why: "That is the point of the pattern: the rule shows up only when matching files are in play." },
+      { id: "k3.3b", q: "Database migration files live in 12 different service folders. Where does the migration convention go?",
+        opts: ["A CLAUDE.md in each of the 12 folders", "One rule file with a pattern that matches migration files", "Your personal CLAUDE.md", "The README"], a: 1,
+        why: "The convention follows a file type spread across folders, so one rule with a pattern covers all of them." }
+    ],
+    docs: [["Organise rules with .claude/rules/", "https://code.claude.com/docs/en/memory"]]
+  },
+  {
+    id: "t3.2", code: "3.2", step: 3, domain: "d3", short: "Skills & commands", name: "Package team workflows as skills and slash commands",
+    what: "A {{skill}} is a saved workflow you run by typing <code>/its-name</code>. A project skill lives in <code>.claude/skills/name/SKILL.md</code> and is shared through the repository. A personal one lives in <code>~/.claude/skills/</code>. Options in the skill's {{frontmatter}} change how it runs.",
+    why: "The exam checks three things. Where to save a workflow so the whole team gets it. Which frontmatter option solves which problem. When something belongs in a skill (on demand) and when it belongs in CLAUDE.md (always loaded).",
+    ideas: [
+      "<code>context: fork</code> runs the skill in a separate {{subagent}}. Only its result comes back, so long output does not flood your conversation.",
+      "<code>argument-hint</code> shows people what to type after the command, such as <code>[table-name]</code>.",
+      "<code>allowed-tools</code>: the exam guide says it restricts which tools the skill may use.",
+      "Skill or CLAUDE.md? Universal standards that always apply go in CLAUDE.md. Task-specific workflows you run when needed go in a skill.",
+      "Want a personal twist on a team skill? Copy it to your home folder under a <i>different</i> name, so teammates are not affected."
+    ],
+    drift: "Current Claude Code has merged custom commands into skills. Older files in <code>.claude/commands/</code> still work, and the exam guide still uses that folder. Also, <code>allowed-tools</code> now only lets the listed tools run without asking you; it no longer blocks other tools. Blocking is done with <code>disallowed-tools</code>. For the exam, use the guide's meaning.",
+    cases: [
+      { id: "c3.2a", label: "/review for all", scen: 2, title: "A /review command every developer should have",
+        situation: "The team wants a /review command that runs its code-review checklist, for everyone who clones the repo.",
+        tempting: "Ask each developer to save it in their own home folder.",
+        works: "Save it in the project (.claude/skills/review/SKILL.md, or .claude/commands/review.md in the guide's wording) and commit it.",
+        why: "Project files travel with the repository. Home-folder files reach no one else.",
+        trap: "Same mistake as with CLAUDE.md: the right content at the wrong level." },
+      { id: "c3.2b", label: "Chat flooded", scen: 4, title: "A codebase analysis floods the conversation",
+        situation: "A skill scans the whole codebase and prints 2,000 lines of findings. After it runs, the session is cluttered and Claude loses track of the actual task.",
+        tempting: "Tell the skill to be brief, or restrict its tools.",
+        works: "Add context: fork, so it runs in a separate subagent and only the summary comes back.",
+        why: "Forking is for output volume. It keeps bulky or exploratory output out of the main conversation.",
+        trap: "Fork is not a sandbox and not about speed. It does not change what the skill is allowed to do." },
+      { id: "c3.2c", label: "Standards as skill", scen: 2, title: "Coding standards packaged as a skill",
+        situation: "Someone turned the team's universal coding standards into a /standards skill. People forget to run it, so the standards are often missed.",
+        tempting: "Remind everyone to run /standards first.",
+        works: "Move universal standards into CLAUDE.md. Keep skills for task workflows you run when needed.",
+        why: "CLAUDE.md is always loaded. A skill loads only when invoked.",
+        trap: "Choosing the on-demand mechanism for something that must always apply." }
+    ],
+    checks: [
+      { id: "k3.2a", q: "A skill brainstorms ten alternative designs. The brainstorm is useful, but it buries the conversation. Which option helps?",
+        opts: ["argument-hint", "context: fork", "paths", "Moving the skill to your home folder"], a: 1,
+        why: "Fork runs it separately and returns only the result, so the exploration stays out of the main session." },
+      { id: "k3.2b", q: "People keep running /migrate without saying which table. What helps them most?",
+        opts: ["argument-hint: \"[table-name]\"", "context: fork", "A line in CLAUDE.md", "Splitting it into two skills"], a: 0,
+        why: "argument-hint shows the expected argument as people type the command." }
+    ],
+    docs: [["Extend Claude with skills", "https://code.claude.com/docs/en/skills"]]
+  },
+  {
+    id: "t3.4", code: "3.4", step: 4, domain: "d3", short: "Plan or act", name: "Choose plan mode or direct execution",
+    what: "In {{plan mode}}, Claude explores and proposes a plan but cannot edit anything until you approve it. In direct execution, Claude makes the change straight away. The Explore subagent is a helper that does long searches through the code and hands back a summary.",
+    why: "The exam describes a task and asks which mode fits. Size and uncertainty decide it: many files, several valid approaches or an architecture decision point to plan mode. A small change with a clear cause points to acting directly.",
+    ideas: [
+      "Plan mode fits migrations across dozens of files, restructuring services, and choosing between approaches with different infrastructure.",
+      "Direct execution fits a one-file bug with a clear stack trace, or adding one validation check.",
+      "Combine them: plan the migration, approve the plan, then let Claude carry it out.",
+      "Long exploration fills the {{context}}. Hand it to the Explore subagent and keep the summary.",
+      "You can switch to plan mode with Shift+Tab or /plan, or start with --permission-mode plan."
+    ],
+    cases: [
+      { id: "c3.4a", label: "45-file migration", scen: 2, title: "A library migration touching 45 files",
+        situation: "The team must move from one HTTP library to another. The change touches 45 files, and there are two reasonable ways to handle retries.",
+        tempting: "Ask Claude to do the migration directly.",
+        works: "Start in plan mode, review and approve the plan, then execute it.",
+        why: "Agreeing on the approach first prevents expensive rework across 45 files.",
+        trap: "Speed now, rework later." },
+      { id: "c3.4b", label: "Clear stack trace", scen: 2, title: "A one-file bug with an obvious cause",
+        situation: "A stack trace points at a null check missing in one function.",
+        tempting: "Use plan mode for everything, to be safe.",
+        works: "Act directly.",
+        why: "The scope is clear and small. A plan adds steps without adding safety.",
+        trap: "Choosing the heavier option because it sounds more careful." },
+      { id: "c3.4c", label: "Context runs out", scen: 4, title: "Exploring a legacy codebase eats the context",
+        situation: "Before a refactor, Claude reads dozens of legacy files in the main session. Halfway through, it starts forgetting the early findings.",
+        tempting: "Keep reading, and ask Claude to remember harder.",
+        works: "Send the discovery to the Explore subagent and work from its summary.",
+        why: "The bulky reading happens in a separate context. Only the findings come back.",
+        trap: "Treating a context-size problem as an instruction problem." }
+    ],
+    checks: [
+      { id: "k3.4a", q: "Add a check that the end date comes after the start date, in one function. Which approach?",
+        opts: ["Plan mode", "Direct execution", "Explore subagent first", "A forked skill"], a: 1,
+        why: "Small, clear, one place. Act directly." },
+      { id: "k3.4b", q: "You must choose between two queueing designs that need different infrastructure. Which approach?",
+        opts: ["Direct execution", "Plan mode", "Ask Claude to try both in the code", "A rules file"], a: 1,
+        why: "Several valid approaches and an architecture decision: explore and plan before anything changes." }
+    ],
+    docs: [["Permission modes, including plan mode", "https://code.claude.com/docs/en/permission-modes"]]
+  },
+  {
+    id: "t3.5", code: "3.5", step: 5, domain: "d3", short: "Refine in rounds", name: "Steer Claude over several rounds",
+    what: "When the first result is not right, how you give feedback matters. Show concrete examples of input and expected output. Write the tests first and share the failures. Let Claude ask you questions before it starts. Group problems that affect each other into one message.",
+    why: "The exam describes a frustrating loop, such as results that keep coming out differently, and asks for the technique that breaks it.",
+    ideas: [
+      "When a description in words gets read in different ways, give 2–3 concrete input → output examples.",
+      "Tests first: write tests for normal cases, edge cases and performance, then iterate by sharing which tests fail.",
+      "The interview pattern: ask Claude to question you first. It surfaces things you had not thought about, such as cache invalidation or failure modes.",
+      "Problems that interact go in one detailed message. Independent problems can be fixed one at a time.",
+      "For an edge case, give the exact input and the expected output, for example a row with null values."
+    ],
+    cases: [
+      { id: "c3.5a", label: "Inconsistent output", scen: 2, title: "“Normalise the names” gives different results every time",
+        situation: "You asked Claude to normalise customer names. Each attempt treats titles, hyphens and capitals differently.",
+        tempting: "Write a longer, more detailed description.",
+        works: "Give 2–3 examples: “dr. ANNA-MARIE o'neil” → “Anna-Marie O'Neil”.",
+        why: "Examples remove the guesswork that words leave open.",
+        trap: "More prose usually means more ways to read it." },
+      { id: "c3.5b", label: "Unfamiliar domain", scen: 4, title: "Building a caching layer in an area you don't know well",
+        situation: "You need a cache in front of a slow service, but you are not sure what can go wrong.",
+        tempting: "Ask Claude to implement it right away.",
+        works: "Use the interview pattern: have Claude ask you about invalidation, stale data and failure modes first.",
+        why: "It surfaces design decisions before they are baked into code.",
+        trap: "Starting to build before the questions are known." },
+      { id: "c3.5c", label: "Linked bugs", scen: 2, title: "Three bugs that affect each other",
+        situation: "A date parser, a timezone conversion and a report total are all wrong. Fixing one changes the others.",
+        tempting: "Fix them one at a time, in separate messages.",
+        works: "Describe all three in one detailed message.",
+        why: "When fixes interact, Claude needs the whole picture to get them consistent. Independent bugs can go one by one.",
+        trap: "Applying the one-at-a-time habit to problems that are linked." }
+    ],
+    checks: [
+      { id: "k3.5a", q: "A prose spec for formatting addresses keeps producing different results. Best next step?",
+        opts: ["Make the description longer", "Give 2–3 concrete input → output examples", "Switch to plan mode", "Start a new session"], a: 1,
+        why: "Concrete examples are the most reliable way to show an expected transformation." },
+      { id: "k3.5b", q: "You found a typo in a log message and, separately, a slow database query. How do you raise them?",
+        opts: ["One message, because both are bugs", "One at a time, because they don't affect each other", "Ask Claude to interview you", "Put both in CLAUDE.md"], a: 1,
+        why: "They are independent, so fixing them in sequence is fine. One combined message is for problems that interact." }
+    ],
+    docs: [["Official exam guide, Task Statement 3.5", null]]
+  },
+  {
+    id: "t3.6", code: "3.6", step: 6, domain: "d3", short: "CI/CD", name: "Run Claude Code in automated pipelines",
+    what: "In {{ci/cd}}, Claude Code runs with nobody at the keyboard. It needs to run without asking questions, return results a program can read, get project knowledge from CLAUDE.md, and have its code reviewed by a separate session.",
+    why: "The pipeline scenario is one of the six exam scenarios. Questions use real flags next to invented ones, so you need to know the real ones.",
+    ideas: [
+      "<code>claude -p \"…\"</code> (or <code>--print</code>) runs once without waiting for input.",
+      "<code>--output-format json</code> with <code>--json-schema</code> returns results in a fixed shape that a script can post as {{pull request}} comments.",
+      "CLAUDE.md gives the pipeline the project's testing standards, fixtures and review criteria.",
+      "The session that wrote the code is worse at reviewing it. Use an independent review session.",
+      "On re-runs, include the earlier findings and ask only for new or still-open issues. Give it the existing tests so it does not suggest duplicates."
+    ],
+    cases: [
+      { id: "c3.6a", label: "Job hangs", scen: 5, title: "The pipeline job hangs forever",
+        situation: "A CI job calls Claude Code and never finishes. The logs show it waiting.",
+        tempting: "A --batch flag, or a CLAUDE_HEADLESS setting.",
+        works: "Run it with -p (print mode), which answers once and exits.",
+        why: "Without -p, Claude Code starts an interactive session and waits for a person.",
+        trap: "Invented flags that sound right. --batch and CLAUDE_HEADLESS are not real." },
+      { id: "c3.6b", label: "Comments as JSON", scen: 5, title: "Review findings must become inline comments",
+        situation: "A script should post each finding as a comment on the right line of the pull request. Today it parses free text, and it breaks often.",
+        tempting: "Better regular expressions for the text output.",
+        works: "Use --output-format json with --json-schema, then post the fields directly.",
+        why: "A fixed, checked shape is far more reliable than parsing prose.",
+        trap: "Fixing the parser instead of the output format." },
+      { id: "c3.6c", label: "Duplicate comments", scen: 5, title: "Every push repeats last time's comments",
+        situation: "After each new commit, the review runs again and posts the same findings again.",
+        tempting: "Delete old comments before each run.",
+        works: "Pass in the earlier findings and ask for only new or still-unaddressed issues.",
+        why: "The reviewer can only avoid repeats if it knows what it already said.",
+        trap: "Cleaning up the symptom instead of giving the missing context." },
+      { id: "c3.6d", label: "Self-review", scen: 5, title: "The same session writes and reviews the code",
+        situation: "The session that generated a feature is asked to review its own changes, and it misses obvious problems.",
+        tempting: "Tell it to “be very critical”.",
+        works: "Run the review in a separate, independent session.",
+        why: "The writing session carries its own assumptions. A fresh session does not.",
+        trap: "Asking the author to see its own blind spots." }
+    ],
+    checks: [
+      { id: "k3.6a", q: "Which flag makes Claude Code run once in a pipeline without waiting for input?",
+        opts: ["--headless", "-p", "--batch", "--ci"], a: 1,
+        why: "-p (or --print) is the real non-interactive flag. The others are made up." },
+      { id: "k3.6b", q: "Session A generated a feature. What is the best way to review it in CI?",
+        opts: ["Ask session A to review its own diff", "Run a separate, independent review session", "Skip review if the tests pass", "Ask session A again, telling it to be strict"], a: 1,
+        why: "An independent session reviews without the author's assumptions." }
+    ],
+    docs: [["CLI reference (flags such as -p and --output-format)", "https://code.claude.com/docs/en/cli-reference"]]
+  }
+];
+
+
+/* ---------- Basics: what a non-developer needs to read the questions ---------- */
+const BASICS_GROUP = { id: "b0", code: "B", name: "Basics for reading the exam", short: "Basics", weight: 0, color: "--b0", ready: true, isBasics: true,
+  what: "The exam assumes you already know some everyday developer words: repository, terminal, flag, JSON, API. These short lessons teach just enough to read the questions correctly. They don't teach programming.",
+  why: "Questions are worded for people who build software. If a word in the question is unfamiliar, you can know the right idea and still pick the wrong answer.",
+  order: "Your placement result marks the ones you need. Each takes a few minutes. Every topic lesson also lists the basics it uses under “Know these first”." };
+
+const BASIC_LESSONS = [
+  { id: "b1", code: "B1", step: 1, short: "Files & paths", name: "Files, folders and paths",
+    what: "Files live in folders, and a path is a file's address, like <code>packages/api/README.md</code>. <code>~</code> means your {{home folder}}. Folders starting with a dot, like <code>.claude</code>, are hidden settings folders. Patterns ({{glob|globs}}) match many files at once.",
+    plain: "A path is a street address for a file. A pattern is a search like “every file ending in .test.tsx, in any folder”.",
+    ideas: ["<code>*</code> matches any characters in a name: <code>*.md</code> is every Markdown file in one folder.", "<code>**</code> matches any number of folders: <code>**/*.md</code> is every Markdown file anywhere.", "<code>~/.claude/</code> is in your home folder, so only you have it. <code>./.claude/</code> is in the project, so the team can share it."],
+    why: "Domain 3 questions turn on where a file lives and which files a pattern matches.",
+    cases: [{ id: "cb1", label: "Which folder?", scen: 2, title: "“~/.claude/CLAUDE.md” vs “.claude/CLAUDE.md”", situation: "Two answer options differ only by a ~ at the start of the path.", tempting: "Read them as the same place.", works: "~ means your personal home folder; without it, the path is inside the project.", why: "One is private to you; the other can be shared with the team.", trap: "Skimming past one character that changes the answer.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb1", q: "Which file does the pattern **/*.test.tsx match?", opts: ["src/login.tsx", "src/auth/login.test.tsx", "tests/notes.md", "Only files inside a folder named **"], a: 1, why: "** means any folders, and *.test.tsx means any name ending in .test.tsx." }], docs: [] },
+  { id: "b2", code: "B2", step: 2, short: "Git & PRs", name: "Git, repositories and pull requests",
+    what: "{{git|Git}} keeps the history of a project. A {{repository}} is the project folder plus its history. You <b>commit</b> a change (save a snapshot), <b>push</b> it to the shared copy (for example on GitHub), and teammates <b>pull</b> to get it. A {{pull request}} is a change proposed for review before it's merged.",
+    plain: "Committed and pushed = the whole team gets it. Saved only on your laptop or in your home folder = only you have it.",
+    ideas: ["“Shared through version control” in a question means: committed to the repository.", "Cloning a repo copies the project files, not anything from the author's home folder.", "CI pipelines usually run on every push or pull request."],
+    why: "Many questions ask whether something reaches the team. The answer depends on whether it's committed to the repo.",
+    bridge: { qa: "You already test builds from branches and pull requests. The same rule applies to instruction files: if it isn't in the branch, the build (and your teammates) don't have it." },
+    cases: [{ id: "cb2", label: "Shared or not?", scen: 2, title: "“The new teammate cloned the repo”", situation: "A question says a teammate cloned the repository and is missing some instructions.", tempting: "Assume something on their laptop is broken.", works: "Ask where the instructions live. Only files committed to the repo come with a clone.", why: "Cloning copies the repository, nothing else.", trap: "Treating a sharing problem as a technical fault.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb2", q: "You saved a new file inside the project folder on your laptop. When does a teammate get it?", opts: ["Immediately", "After you commit and push it, and they pull", "Only if it's in your home folder", "Never"], a: 1, why: "Sharing goes through the repository: commit, push, then the teammate pulls." }], docs: [] },
+  { id: "b3", code: "B3", step: 3, short: "Terminal", name: "The terminal, commands and flags",
+    what: "In a {{terminal}} you type a command to run a program. Extra options are {{flag|flags}}: short ones start with one dash (<code>-p</code>), long ones with two (<code>--output-format json</code>). Some programs are interactive and wait for you to type; others run once and exit.",
+    plain: "A command is a sentence: the program's name, then options that change what it does.",
+    ideas: ["In <code>claude -p \"Review this\" --output-format json</code>: <code>claude</code> is the program, <code>-p</code> means run once without waiting, <code>--output-format json</code> asks for JSON output.", "Exams use made-up flags as wrong answers. Learn the few real ones in the lessons.", "Interactive means a person types replies. A pipeline has no person, so it needs the non-interactive mode."],
+    why: "CI/CD questions (Domain 3, Scenario 5) are mostly about which flags to use.",
+    cases: [{ id: "cb3", label: "Real flag?", scen: 5, title: "“--batch” or “-p”?", situation: "Options offer claude --batch, claude -p, setting CLAUDE_HEADLESS=true, and claude --ci.", tempting: "Pick the one that sounds most like automation.", works: "-p is the real flag for non-interactive runs. The others are invented.", why: "Distractors are written to sound plausible.", trap: "Choosing by how a name sounds.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb3", q: "In claude -p \"Summarise\" --output-format json, what is --output-format json?", opts: ["A flag with a value: it sets the output format", "A file name", "An error message", "A second program"], a: 0, why: "It's a long-form flag (two dashes) followed by its value." }], docs: [] },
+  { id: "b4", code: "B4", step: 4, short: "JSON", name: "JSON and JSON Schema",
+    what: "{{json|JSON}} is text that holds structured data: <code>{\"name\": \"Anna\", \"items\": [1, 2]}</code>. Curly braces hold named fields, square brackets hold lists. A {{json schema|JSON Schema}} describes the exact shape a JSON result must have, so a program can check it.",
+    plain: "JSON is a form with labelled boxes. The schema is the rule sheet that says which boxes must be filled and with what.",
+    ideas: ["Programs read JSON reliably; they read free text badly.", "A schema catches missing or wrong fields automatically.", "“Structured output” in the exam usually means JSON that follows a schema."],
+    why: "Domain 4 (structured output), tool errors in Domain 2 and CI results in Domain 3 all use JSON.",
+    bridge: { qa: "A schema is like the expected-result column in a test case: the output either matches it or the check fails." },
+    cases: [{ id: "cb4", label: "Why JSON?", scen: 6, title: "“Parse the free-text answer” vs “use a schema”", situation: "A program must read Claude's results. One option improves the text parsing; another asks for JSON matching a schema.", tempting: "Improve the parsing, since the text is almost right.", works: "Ask for JSON that follows a schema.", why: "A fixed, checkable shape is far more reliable than reading prose.", trap: "Fixing the reader instead of the format.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb4", q: "Which of these is valid JSON?", opts: ["{name: Anna}", "{\"name\": \"Anna\", \"age\": 31}", "<name>Anna</name>", "name = \"Anna\""], a: 1, why: "JSON needs double quotes around field names and text values." }], docs: [] },
+  { id: "b5", code: "B5", step: 5, short: "APIs & errors", name: "APIs, errors and retries",
+    what: "An {{api|API}} lets one program ask another for something: it sends a request and gets a response. Some failures are temporary (a timeout, a busy service) and worth retrying. Others are permanent (no permission, invalid input, the order doesn't exist), and retrying won't help.",
+    plain: "Temporary error: try again in a moment. Permanent error: trying again gives the same answer.",
+    ideas: ["A good error message says which kind of failure it was, so the caller knows whether to retry.", "“No results found” is not an error: the search worked and found nothing.", "When one agent calls another, errors should travel back with enough detail to decide what to do."],
+    why: "Domain 2 asks how tools should report errors; Domain 5 asks how errors travel between agents.",
+    bridge: { qa: "You see this in bug reports: a 500 or a timeout might pass on a retest; a 403 or a validation error won't." },
+    cases: [{ id: "cb5", label: "Retry or not?", scen: 1, title: "A failed refund call", situation: "A tool returns an error during a refund. Options: retry three times, or read the error type first.", tempting: "Always retry; it's safer.", works: "Retry only temporary errors. For a permission or business-rule error, explain or escalate instead.", why: "Retrying a permanent error wastes time and can annoy the customer.", trap: "Treating every error the same way.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb5", q: "Which failure is worth retrying automatically?", opts: ["The service timed out", "You don't have permission", "The order number doesn't exist", "The input is in the wrong format"], a: 0, why: "A timeout is temporary. The others will fail again the same way." }], docs: [] },
+  { id: "b6", code: "B6", step: 6, short: "LLMs & context", name: "How Claude reads: prompts, tokens and the context window",
+    what: "Claude reads text and writes a response. The {{context|context window}} is everything it can see at once: instructions, the conversation so far, file contents, tool results. It has a size limit, measured in {{token|tokens}}. Each new request only knows what you send with it.",
+    plain: "Think of a desk with limited space. Everything Claude works with must fit on the desk. Clutter pushes useful papers off the edge.",
+    ideas: ["More text is not always better. Irrelevant text competes with the important details.", "Details in the middle of a long input are the easiest to miss.", "Summaries save space but can lose exact numbers, dates and names."],
+    why: "Domain 5 is mostly about the context window, and Domains 1 and 3 use it too (subagents, forking, plan mode).",
+    cases: [{ id: "cb6", label: "Long session", scen: 1, title: "A long chat forgets an early detail", situation: "Late in a long support chat, the agent gets the refund amount the customer mentioned at the start wrong.", tempting: "The model is broken, or needs a bigger model.", works: "Keep key facts (amounts, dates, order numbers) in a separate block that's included every time.", why: "Early details get diluted or summarised away in long contexts.", trap: "Blaming the model instead of how the context is managed.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb6", q: "Claude is given a 300-page document and a long chat history. What's the main risk?", opts: ["It refuses to read it", "Details get lost because everything competes for limited space", "The document gets deleted", "None: more text always helps"], a: 1, why: "The context window is limited, and clutter crowds out the details that matter." }], docs: [] },
+  { id: "b7", code: "B7", step: 7, short: "Tools & agents", name: "Tools, agents, subagents and hooks",
+    what: "A tool is an action Claude can ask your code to perform, such as looking up an order. Claude decides to use it, your code runs it, and the result comes back. An {{agent}} repeats this loop until the job is done. A {{subagent}} is a helper agent with its own context. A {{hook}} is your own code that runs at a fixed moment and can block an action. {{mcp|MCP}} is a standard way to plug outside systems in as tools.",
+    plain: "Claude is the decision-maker; tools are its hands. Hooks are the safety rails that don't depend on Claude remembering a rule.",
+    ideas: ["Claude doesn't log into your database. It asks for a tool, and your code does the work.", "A rule in the prompt is followed most of the time. A hook is followed every time.", "A coordinator agent hands parts of a job to subagents and combines their results."],
+    why: "Domain 1 (agents) and Domain 2 (tools and MCP) are built on these words: 45% of the exam.",
+    bridge: { qa: "A prompt rule is like a note in the test plan; a hook is like an automated gate that fails the build. Only the gate is guaranteed." },
+    cases: [{ id: "cb7", label: "Must never", scen: 1, title: "“Refunds over $500 must never go through without a human”", situation: "Options: state the rule in the prompt, ask Claude to double-check, or add a hook that blocks the refund call above $500.", tempting: "A clear prompt instruction should be enough.", works: "A hook that intercepts the call before it runs and routes it to a human.", why: "“Must never” needs a guarantee. Only code can guarantee it.", trap: "Relying on instructions for a rule that cannot be broken.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb7", q: "Claude needs today's order status from your shop's database. How does that usually work?", opts: ["It already knows from training", "It asks to use a tool; your code fetches the data and returns it", "It logs into the database itself", "It can't be done"], a: 1, why: "Tools are how Claude reaches live systems: it asks, your code acts." }], docs: [] },
+  { id: "b8", code: "B8", step: 8, short: "CI/CD", name: "CI/CD pipelines",
+    what: "A {{ci/cd}} {{pipeline}} runs automatic steps whenever code changes: build, run tests, run checks, post results on the pull request. Nobody is watching while it runs, so every step must finish on its own and report in a form a program can read.",
+    plain: "A conveyor belt that checks every change. It can't stop to ask anyone a question.",
+    ideas: ["Anything interactive will hang in a pipeline.", "Results are usually posted back as comments or pass/fail checks.", "The same review shouldn't repeat comments on every push."],
+    why: "Scenario 5 (Claude Code in CI) and Task 3.6 are built on this.",
+    bridge: { qa: "You know this world: regression runs that gate merges. Claude Code in CI is one more automated step on that belt." },
+    cases: [{ id: "cb8", label: "No one there", scen: 5, title: "“The job waits for input”", situation: "A question says a pipeline job never finishes and the log shows it waiting.", tempting: "Increase the timeout.", works: "Run the step in non-interactive mode (for Claude Code: -p).", why: "Waiting for input means it expects a person, and there isn't one.", trap: "Treating a missing mode as a slowness problem.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb8", q: "Why can't a pipeline job stop and ask a question?", opts: ["There's no person watching while it runs", "Pipelines forbid text", "Questions cost extra", "It can; it waits for the next push"], a: 0, why: "Pipelines run unattended, so anything that waits for a person hangs." }], docs: [] },
+  { id: "b9", code: "B9", step: 9, short: "Reading Qs", name: "Reading exam questions",
+    what: "Every question has one best answer and three {{distractor|distractors}}. The wording carries a lot of the answer. Learn the signal words, and read the question before the options.",
+    plain: "Underline the words that set the bar: “first step”, “guarantee”, “root cause”. Then look for the option that meets exactly that bar.",
+    ideas: ["“Most effective first step” → the smallest targeted change at the root cause, not the biggest rebuild.", "“Guarantee”, “must never”, “every time” → enforced by code (a hook, a schema), not by an instruction in the prompt.", "“Root cause” → fix where the problem starts, not the symptom.", "Several options can be partly true. Pick the one that solves the stated problem with the fewest side effects.", "If a flag or setting never appeared in your lessons, be suspicious of it.", "A blank answer counts as wrong and guessing isn't penalised, so always answer."],
+    why: "Non-developers lose more points on wording than on knowledge.",
+    cases: [{ id: "cb9", label: "First step", scen: 1, title: "“The most effective first step”", situation: "An agent picks the wrong tool. Options: add many examples to the prompt, rewrite the tool descriptions, build a routing layer, or merge the tools.", tempting: "The routing layer: it sounds the most thorough.", works: "Rewrite the tool descriptions. They are how Claude chooses tools, so this fixes the root cause with little effort.", why: "“First step” asks for the targeted, low-effort fix. This is a sample question from the official exam guide.", trap: "Ignoring the words “first step”.", labels: ["Misreading", "Right reading"] }],
+    checks: [{ id: "kb9", q: "A question says a rule “must never be broken”. Which kind of answer usually fits?", opts: ["A clearer instruction in the prompt", "Code that enforces it, such as a hook", "Asking Claude to be careful", "A longer system prompt"], a: 1, why: "“Must never” asks for a guarantee, and only code gives one." }], docs: [] }
+];
+BASIC_LESSONS.forEach(b => b.domain = "b0");
+
+/* ---------- Extra layers for topic lessons ---------- */
+const KNOW = { "t3.1": ["b1", "b2"], "t3.3": ["b1"], "t3.2": ["b1", "b2", "b6"], "t3.4": ["b6", "b7"], "t3.5": ["b6"], "t3.6": ["b3", "b4", "b8", "b2"] };
+const PLAIN = {
+  "t3.1": "CLAUDE.md is a briefing note for Claude. Your personal note goes with you; the project's note goes to the whole team.",
+  "t3.3": "A checklist that only pops up when you open a certain kind of file.",
+  "t3.2": "A saved recipe the team can run with one short command.",
+  "t3.4": "Plan mode means “show me the plan before you touch anything”. Direct execution means “just fix it”.",
+  "t3.5": "Showing beats describing. And let Claude ask you questions before it starts.",
+  "t3.6": "Claude as one more robot on the build line: nobody is there to answer it, and its results must be machine-readable."
+};
+const BRIDGE = {
+  "t3.4": { qa: "Like a test plan reviewed before a big release, versus simply retesting a one-line fix.", pm: "Like approving a project plan before work starts, versus handling a small request directly." },
+  "t3.5": { qa: "Tests first, then share the failures: you write the expected results before the code exists, and use red tests to steer the fix.", dev: "This is test-driven development applied to working with Claude." },
+  "t3.6": { qa: "The same reason independent QA exists: the author of a change is the worst person to test it.", ops: "Treat Claude Code like any other non-interactive pipeline step: fixed flags, machine-readable output, no prompts." },
+  "t3.2": { pm: "Like a shared template every team member can use, versus a personal one in your own drive." }
+};
+
+/* ---------- Onboarding: role first, then questions that fit the role ---------- */
+const ROLES = [
+  ["dev", "Software developer or engineer"], ["qa", "QA or test engineer"], ["ops", "DevOps, IT or support engineer"],
+  ["pm", "Product, project or business role"], ["design", "Designer"], ["other", "Something else, or a student"]
+];
+const EXP = [
+  ["e_code", "Written code that other people use"], ["e_git", "Used git: commit, push, pull request"], ["e_term", "Run commands in a terminal"],
+  ["e_json", "Read or edited JSON"], ["e_api", "Called an API (for example in Postman)"], ["e_ci", "Worked with CI pipelines (GitHub Actions, Jenkins…)"],
+  ["e_chat", "Used ChatGPT or Claude in a browser"], ["e_cc", "Used Claude Code"], ["e_sdk", "Built something with the Claude API or Agent SDK"]
+];
+const PROBES = {
+  p1: { basic: "b1", q: "Which file does the pattern **/*.test.tsx match?", opts: ["src/login.tsx", "src/auth/login.test.tsx", "tests/notes.md", "Only files in a folder named **"], a: 1 },
+  p2: { basic: "b2", q: "You saved a file inside the project folder on your laptop. When does a teammate get it?", opts: ["Immediately", "After you commit and push it, and they pull", "Only if it's in your home folder", "Never"], a: 1 },
+  p3: { basic: "b3", q: "In claude -p \"Summarise\" --output-format json, what is --output-format?", opts: ["An option that sets the output format", "A file name", "An error message", "A second program"], a: 0 },
+  p4: { basic: "b4", q: "Which of these is valid JSON?", opts: ["{name: Anna}", "{\"name\": \"Anna\", \"age\": 31}", "<name>Anna</name>", "name = \"Anna\""], a: 1 },
+  p5: { basic: "b5", q: "A request to another system fails. Which failure is worth retrying automatically?", opts: ["The service timed out", "You don't have permission", "The order number doesn't exist", "The input is in the wrong format"], a: 0 },
+  p6: { basic: "b6", q: "Claude gets a 300-page document plus a long chat history. What's the main risk?", opts: ["It refuses to read it", "Details get lost because everything competes for limited space", "The document gets deleted", "None: more text always helps"], a: 1 },
+  p7: { basic: "b7", q: "Claude needs today's order status from a shop's database. How does that usually work?", opts: ["It already knows from training", "It asks to use a tool; code fetches the data and returns it", "It logs into the database itself", "It can't be done"], a: 1 },
+  p8: { basic: "b8", q: "Why can't a CI pipeline job stop and ask someone a question?", opts: ["Nobody is watching while it runs", "Pipelines forbid text", "Questions cost extra", "It can; it waits for the next push"], a: 0 },
+  c1: { concept: true, q: "A teammate doesn't get your Claude Code instructions. Your file is ~/.claude/CLAUDE.md. Why?", opts: ["It's in your home folder, which isn't shared", "CLAUDE.md only works for one person", "They need a newer Claude Code", "The file is too long"], a: 0 },
+  c2: { concept: true, q: "A refund over $500 must never go through without a human. What's the strongest way to enforce that?", opts: ["State it clearly in the prompt", "A hook that blocks the call before it runs", "Ask Claude to double-check", "Use a bigger model"], a: 1 },
+  c3: { concept: true, q: "In a support chat, which is the clearest reason to hand over to a human right away?", opts: ["The customer sounds annoyed", "The customer explicitly asks for a human", "Claude's confidence score is low", "The chat is long"], a: 1 },
+  c4: { concept: true, q: "A program must read Claude's output, with the same fields every time. Best approach?", opts: ["Ask nicely in the prompt", "Structured output that follows a JSON schema", "A longer prompt", "Fix the output by hand"], a: 1 }
+};
+const TRACKS = {
+  A: ["Newcomer", "You'll start with the basics the exam takes for granted, then move into the domains. Every lesson opens with a plain-terms summary."],
+  B: ["Some background", "Fill the few gaps below, then go straight into the domains."],
+  C: ["Builder", "You know the ground. Start with how exam questions are worded, then the domains and their traps."]
+};
+
+/* ---------- State ---------- */
+const STORE_KEY = "ccaf-study-map-v1";
+let progress = { read: {}, cases: {}, checks: {}, profile: null, skipped: false };
+try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {} }
+
+const byId = {};
+const root = { id: "root", kind: "root", name: "CCAF exam", short: "CCAF" };
+byId.root = root;
+TASKS.forEach(t => { if (KNOW[t.id]) t.know = KNOW[t.id]; if (PLAIN[t.id]) t.plain = PLAIN[t.id]; if (BRIDGE[t.id]) t.bridge = BRIDGE[t.id]; });
+TASKS.push(...BASIC_LESSONS);
+const SPOKES = [BASICS_GROUP, ...DOMAINS];
+SPOKES.forEach(d => { d.kind = "domain"; d.parent = "root"; d.tasks = TASKS.filter(t => t.domain === d.id).sort((a, b) => a.step - b.step); byId[d.id] = d; });
+TASKS.forEach(t => { t.kind = "task"; t.parent = t.domain; byId[t.id] = t; t.cases.forEach(c => { c.kind = "case"; c.parent = t.id; byId[c.id] = c; }); });
+SCENARIOS.forEach(s => { s.kind = "scenario"; byId[s.id] = s; });
+
+let focus = "root";
+let openCase = null;
+let firstAnswer = {};
+
+/* ---------- Progress maths ---------- */
+function taskParts(t) {
+  const read = progress.read[t.id] ? 1 : 0;
+  const cases = t.cases.filter(c => progress.cases[c.id]).length / t.cases.length;
+  const checks = t.checks.filter(k => progress.checks[k.id]).length / t.checks.length;
+  return [read, cases, checks];
+}
+function domainParts(d) {
+  if (!d.tasks.length) return [0, 0, 0];
+  const s = [0, 0, 0];
+  d.tasks.forEach(t => taskParts(t).forEach((v, i) => s[i] += v));
+  return s.map(v => v / d.tasks.length);
+}
+function rootParts() {
+  const s = [0, 0, 0];
+  DOMAINS.forEach(d => domainParts(d).forEach((v, i) => s[i] += v * d.weight / 100));
+  return s;
+}
+function partsFor(n) {
+  if (n.kind === "task") return taskParts(n);
+  if (n.kind === "domain") return domainParts(n);
+  if (n.kind === "root") return rootParts();
+  return null;
+}
+function colorOf(n) {
+  const d = n.kind === "domain" ? n : n.kind === "task" ? byId[n.domain] : n.kind === "case" ? byId[byId[n.parent].domain] : null;
+  return d ? `var(${d.color})` : n.kind === "scenario" ? "var(--scen)" : "var(--ink)";
+}
+
+/* ---------- Layout ---------- */
+const R_DOMAIN = 260, R_CASE = 125;
+function rad(deg) { return deg * Math.PI / 180; }
+function polar(cx, cy, r, deg) { return [cx + r * Math.cos(rad(deg)), cy + r * Math.sin(rad(deg))]; }
+function radiusOf(n) {
+  if (n.kind === "root") return 58;
+  if (n.kind === "domain") return n.isBasics ? 40 : 30 + n.weight * 0.6;
+  if (n.kind === "task") return n.domain === "b0" ? 24 : 30;
+  if (n.kind === "scenario") return 19;
+  return 17;
+}
+function expandedDomain() {
+  const n = byId[focus];
+  if (n.kind === "domain") return n;
+  if (n.kind === "task") return byId[n.domain];
+  return null;
+}
+function layout() {
+  const pos = { root: [0, 0] };
+  const visible = ["root"], edges = [];
+  const angles = {};
+  SPOKES.forEach((d, i) => {
+    const a = -90 + i * 60; angles[d.id] = a;
+    pos[d.id] = polar(0, 0, R_DOMAIN, a); visible.push(d.id); edges.push(["root", d.id, "child"]);
+  });
+  const exp = expandedDomain();
+  if (exp) {
+    const a = angles[exp.id], n = exp.tasks.length, spread = Math.min(170, (n - 1) * 32), R_TASK = n > 6 ? 250 : 230;
+    exp.tasks.forEach((t, k) => {
+      const ta = a - spread / 2 + (n > 1 ? k * spread / (n - 1) : spread / 2);
+      angles[t.id] = ta;
+      pos[t.id] = polar(pos[exp.id][0], pos[exp.id][1], R_TASK, ta); visible.push(t.id); edges.push([exp.id, t.id, "child"]);
+    });
+  }
+  const f = byId[focus];
+  if (f.kind === "root") {
+    SCENARIOS.forEach((s, i) => { pos[s.id] = polar(0, 0, 145, -90 + 30 + i * 60); visible.push(s.id); edges.push(["root", s.id, "related"]); });
+  } else if (f.kind === "domain") {
+    const rel = SCENARIOS.filter(s => s.domains.includes(f.id));
+    const a = angles[f.id] + 180, spread = 70;
+    rel.forEach((s, i) => {
+      const sa = a - spread / 2 + (rel.length > 1 ? i * spread / (rel.length - 1) : spread / 2);
+      pos[s.id] = polar(pos[f.id][0], pos[f.id][1], 105, sa); visible.push(s.id); edges.push([f.id, s.id, "related"]);
+    });
+  } else if (f.kind === "task") {
+    const base = angles[f.id], m = f.cases.length, spread = m > 3 ? 120 : 96;
+    f.cases.forEach((c, i) => {
+      const ca = base - spread / 2 + (m > 1 ? i * spread / (m - 1) : spread / 2);
+      pos[c.id] = polar(pos[f.id][0], pos[f.id][1], R_CASE, ca); visible.push(c.id); edges.push([f.id, c.id, "related"]);
+    });
+  }
+  return { pos, visible, edges };
+}
+function focusSet() {
+  const f = byId[focus], ids = [focus];
+  if (f.kind === "root") { SPOKES.forEach(d => ids.push(d.id)); SCENARIOS.forEach(s => ids.push(s.id)); }
+  if (f.kind === "domain") { ids.push("root"); f.tasks.forEach(t => ids.push(t.id)); SCENARIOS.filter(s => s.domains.includes(f.id)).forEach(s => ids.push(s.id)); }
+  if (f.kind === "task") { ids.push(f.domain); f.cases.forEach(c => ids.push(c.id)); byId[f.domain].tasks.forEach(t => ids.push(t.id)); }
+  return ids;
+}
+
+/* ---------- Drawing ---------- */
+const svg = document.getElementById("map");
+const NS = "http://www.w3.org/2000/svg";
+const gEdges = document.createElementNS(NS, "g"), gNodes = document.createElementNS(NS, "g");
+svg.append(gEdges, gNodes);
+let cur = {}, target = {}, view = [-420, -420, 840, 840], viewTarget = view.slice();
+const nodeEls = {}, edgeEls = {};
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function arcPath(r0, r1, a0, a1) {
+  const large = a1 - a0 > 180 ? 1 : 0;
+  const [x0, y0] = polar(0, 0, r1, a0), [x1, y1] = polar(0, 0, r1, a1);
+  const [x2, y2] = polar(0, 0, r0, a1), [x3, y3] = polar(0, 0, r0, a0);
+  return `M${x0} ${y0}A${r1} ${r1} 0 ${large} 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 ${large} 0 ${x3} ${y3}Z`;
+}
+function drawRing(g, r, parts, color) {
+  const r0 = r * 0.68, gap = 4;
+  const shades = [30, 62, 100];
+  for (let i = 0; i < 3; i++) {
+    const a0 = -90 + i * 120 + gap / 2, a1 = -90 + (i + 1) * 120 - gap / 2;
+    el("path", { d: arcPath(r0, r, a0, a1), fill: "var(--track)" }, g);
+    const v = Math.max(0, Math.min(1, parts[i]));
+    if (v > 0.001) {
+      const p = el("path", { d: arcPath(r0, r, a0, a0 + (a1 - a0) * v) }, g);
+      p.style.fill = `color-mix(in srgb, ${color} ${shades[i]}%, var(--surface))`;
+    }
+  }
+}
+function buildNode(n) {
+  const g = el("g", { class: "node", tabindex: "0", role: "button" }, gNodes);
+  g.dataset.id = n.id;
+  g.addEventListener("click", e => { e.stopPropagation(); activate(n.id); });
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(n.id); } });
+  nodeEls[n.id] = g;
+  return g;
+}
+function paintNode(n) {
+  const g = nodeEls[n.id] || buildNode(n);
+  g.textContent = "";
+  const r = radiusOf(n), color = colorOf(n);
+  el("circle", { class: "halo", r: r + 6 }, g);
+  const parts = partsFor(n);
+  if (parts) {
+    drawRing(g, r, parts, color);
+    const inner = el("circle", { r: r * 0.64 }, g);
+    inner.style.fill = n.kind === "root" ? "var(--ink)" : `color-mix(in srgb, ${color} 16%, var(--surface))`;
+    inner.style.stroke = n.kind === "root" ? "none" : color; inner.style.strokeWidth = "1.5";
+    const t = el("text", { "text-anchor": "middle", dy: "0.35em", class: "code" }, g);
+    t.textContent = n.kind === "root" ? "CCAF" : n.kind === "domain" ? n.code : n.code;
+    t.style.fontSize = n.kind === "root" ? "17px" : n.kind === "domain" ? "15px" : "12px";
+    if (n.kind === "root") t.style.fill = "var(--bg)";
+  } else {
+    const c = el("circle", { r }, g);
+    const done = n.kind === "case" && progress.cases[n.id];
+    c.style.fill = done ? `color-mix(in srgb, ${color} 55%, var(--surface))` : "var(--surface)";
+    c.style.stroke = color; c.style.strokeWidth = "2";
+    c.style.strokeDasharray = n.kind === "scenario" ? "0" : "0";
+    const t = el("text", { "text-anchor": "middle", dy: "0.35em", class: "code" }, g);
+    t.textContent = n.kind === "scenario" ? "S" + n.n : "?";
+    t.style.fontSize = "11px";
+    if (done) t.textContent = "✓";
+  }
+  const lab = el("text", { "text-anchor": "middle", class: "label", y: r + 17 }, g);
+  lab.textContent = n.kind === "root" ? "The exam" : n.kind === "domain" ? n.short : n.kind === "task" ? `${n.step}. ${n.short}` : n.kind === "scenario" ? n.name : n.label;
+  if (n.kind === "case" || n.kind === "scenario" || (n.kind === "task" && n.domain === "b0")) lab.style.fontSize = "11.5px";
+  if (n.kind === "domain") {
+    const sub = el("text", { "text-anchor": "middle", class: "sub", y: r + 31 }, g);
+    sub.textContent = n.isBasics ? "Start here if new" : n.ready ? `${n.weight}% of the exam` : `${n.weight}% · lessons soon`;
+  }
+  const nx = nextStep();
+  if (nx && (n.id === nx || (n.kind === "domain" && n.tasks.some(t => t.id === nx) && expandedDomain() !== n))) {
+    const pin = el("g", { class: "pin", transform: `translate(0 ${-r - 20})` }, g);
+    el("rect", { x: -22, y: -10, width: 44, height: 18, rx: 9 }, pin);
+    const pt = el("text", { "text-anchor": "middle", dy: "0.32em" }, pin); pt.textContent = "NEXT";
+  }
+  g.classList.toggle("dim", n.kind === "domain" && !n.ready);
+  g.classList.toggle("is-focus", n.id === focus);
+  g.setAttribute("aria-label", ariaFor(n));
+}
+function ariaFor(n) {
+  if (n.kind === "root") return "The CCAF exam overview";
+  if (n.kind === "domain" && n.isBasics) return "Basics for reading the exam";
+  if (n.kind === "domain") return `Domain ${n.code.slice(1)}: ${n.name}, ${n.weight}% of the exam${n.ready ? "" : ", lessons coming soon"}`;
+  if (n.kind === "task") return `Step ${n.step}, task ${n.code}: ${n.name}`;
+  if (n.kind === "case") return `Case: ${n.title}`;
+  return `Scenario ${n.n}: ${n.title}`;
+}
+
+let L = layout();
+function render() {
+  L = layout();
+  const vis = new Set(L.visible);
+  Object.keys(nodeEls).forEach(id => { if (!vis.has(id)) { nodeEls[id].remove(); delete nodeEls[id]; delete cur[id]; } });
+  L.visible.forEach(id => {
+    const n = byId[id];
+    if (!cur[id]) {
+      const p = n.parent && cur[n.parent] ? cur[n.parent] : n.kind === "scenario" ? (cur[focus] || [0, 0]) : L.pos[id];
+      cur[id] = p.slice();
+    }
+    target[id] = L.pos[id];
+    paintNode(n);
+  });
+  Object.keys(edgeEls).forEach(k => { edgeEls[k].remove(); delete edgeEls[k]; });
+  L.edges.forEach(([a, b, kind]) => { edgeEls[a + ">" + b] = el("path", { class: "edge" + (kind === "related" ? " related" : "") }, gEdges); });
+  fitTo(focusSet());
+  animate();
+  renderCrumbs();
+}
+function fitTo(ids) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  ids.forEach(id => { const p = L.pos[id]; if (!p) return; const r = radiusOf(byId[id]) + 40; x0 = Math.min(x0, p[0] - r); y0 = Math.min(y0, p[1] - r); x1 = Math.max(x1, p[0] + r); y1 = Math.max(y1, p[1] + r + 20); });
+  const rect = svg.getBoundingClientRect(), aspect = rect.width / Math.max(1, rect.height);
+  let w = x1 - x0, h = y1 - y0;
+  if (w / h < aspect) { const nw = h * aspect; x0 -= (nw - w) / 2; w = nw; } else { const nh = w / aspect; y0 -= (nh - h) / 2; h = nh; }
+  viewTarget = [x0, y0, w, h];
+}
+let anim = null;
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animate() {
+  if (anim) cancelAnimationFrame(anim);
+  const start = performance.now(), from = {}, vFrom = view.slice();
+  Object.keys(cur).forEach(id => from[id] = cur[id].slice());
+  const dur = reduce ? 0 : 520;
+  function frame(now) {
+    const t = dur ? Math.min(1, (now - start) / dur) : 1, e = 1 - Math.pow(1 - t, 3);
+    Object.keys(target).forEach(id => {
+      if (!from[id] || !nodeEls[id]) return;
+      cur[id] = [from[id][0] + (target[id][0] - from[id][0]) * e, from[id][1] + (target[id][1] - from[id][1]) * e];
+      nodeEls[id].setAttribute("transform", `translate(${cur[id][0]} ${cur[id][1]})`);
+    });
+    view = vFrom.map((v, i) => v + (viewTarget[i] - v) * e);
+    svg.setAttribute("viewBox", view.join(" "));
+    drawEdges();
+    if (t < 1) anim = requestAnimationFrame(frame); else anim = null;
+  }
+  anim = requestAnimationFrame(frame);
+}
+function drawEdges() {
+  L.edges.forEach(([a, b]) => {
+    const p = edgeEls[a + ">" + b], pa = cur[a], pb = cur[b];
+    if (!p || !pa || !pb) return;
+    const ra = radiusOf(byId[a]), rb = radiusOf(byId[b]);
+    const dx = pb[0] - pa[0], dy = pb[1] - pa[1], d = Math.hypot(dx, dy) || 1;
+    const sx = pa[0] + dx / d * (ra + 4), sy = pa[1] + dy / d * (ra + 4);
+    const ex = pb[0] - dx / d * (rb + 4), ey = pb[1] - dy / d * (rb + 4);
+    p.setAttribute("d", `M${sx} ${sy}L${ex} ${ey}`);
+    p.style.stroke = byId[b].kind === "scenario" ? "var(--line)" : `color-mix(in srgb, ${colorOf(byId[b])} 55%, var(--line))`;
+  });
+}
+
+/* ---------- Pan and zoom ---------- */
+let drag = null;
+svg.addEventListener("pointerdown", e => { if (e.target.closest(".node")) return; drag = { x: e.clientX, y: e.clientY, v: view.slice() }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); });
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const rect = svg.getBoundingClientRect(), k = drag.v[2] / rect.width;
+  view = [drag.v[0] - (e.clientX - drag.x) * k, drag.v[1] - (e.clientY - drag.y) * k, drag.v[2], drag.v[3]];
+  viewTarget = view.slice(); svg.setAttribute("viewBox", view.join(" "));
+});
+function endDrag() { drag = null; svg.classList.remove("dragging"); }
+svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const rect = svg.getBoundingClientRect(), f = Math.exp(e.deltaY * 0.0015);
+  const mx = view[0] + (e.clientX - rect.left) / rect.width * view[2], my = view[1] + (e.clientY - rect.top) / rect.height * view[3];
+  const w = Math.min(3000, Math.max(200, view[2] * f)), s = w / view[2];
+  view = [mx - (mx - view[0]) * s, my - (my - view[1]) * s, w, view[3] * s];
+  viewTarget = view.slice(); svg.setAttribute("viewBox", view.join(" "));
+}, { passive: false });
+document.getElementById("fit").addEventListener("click", () => { fitTo(focusSet()); animate(); });
+window.addEventListener("resize", () => { fitTo(focusSet()); animate(); });
+
+/* ---------- Navigation ---------- */
+function activate(id) {
+  const n = byId[id];
+  if (n.kind === "case") {
+    focus = n.parent; openCase = id; markCase(id);
+  } else if (n.kind === "scenario") {
+    showScenario(n); return;
+  } else {
+    focus = id; openCase = null;
+  }
+  render(); renderPanel();
+}
+function markCase(id) { if (!progress.cases[id]) { progress.cases[id] = true; save(); } }
+function renderCrumbs() {
+  const nav = document.getElementById("crumbs"); nav.textContent = "";
+  const chain = []; let n = byId[focus];
+  while (n) { chain.unshift(n); n = n.parent ? byId[n.parent] : null; }
+  chain.forEach((c, i) => {
+    if (i) { const s = document.createElement("span"); s.textContent = "›"; s.setAttribute("aria-hidden", "true"); nav.appendChild(s); }
+    const b = document.createElement("button"); b.type = "button";
+    b.textContent = c.kind === "root" ? "The exam" : c.kind === "domain" ? `${c.code} ${c.short}` : `${c.code} ${c.short}`;
+    b.setAttribute("aria-current", c.id === focus ? "true" : "false");
+    b.addEventListener("click", () => activate(c.id));
+    nav.appendChild(b);
+  });
+}
+
+/* ---------- Panel ---------- */
+const panel = document.getElementById("panel");
+function rich(s) {
+  return s.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (m, key, label) => {
+    const g = GLOSSARY[key.toLowerCase()];
+    const text = label || (g ? g[0] : key);
+    return g ? `<span class="term" tabindex="0" data-g="${key.toLowerCase()}">${text}</span>` : text;
+  });
+}
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+function renderPanel(scenarioHtml) {
+  const n = byId[focus];
+  let h = "";
+  if (n.kind === "root") h = rootHtml();
+  else if (n.kind === "domain") h = domainHtml(n);
+  else h = taskHtml(n);
+  panel.innerHTML = `<div class="panel-inner">${scenarioHtml || ""}${h}</div>`;
+  wirePanel(n);
+  if (!scenarioHtml) panel.scrollTop = 0;
+  if (openCase) {
+    const d = panel.querySelector(`details[data-case="${openCase}"]`);
+    if (d) { d.open = true; d.classList.add("flash"); d.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" }); }
+  }
+}
+function rootHtml() {
+  const weights = DOMAINS.map(d => `<button type="button" data-go="${d.id}"><span class="pct" style="text-align:left">${d.code}</span><span><span style="display:block;font-size:.9rem">${esc(d.name)}</span><span class="bar"><i style="width:${d.weight * 3}%;background:var(${d.color})"></i></span></span><span class="pct">${d.weight}%</span></button>`).join("");
+  return `
+  ${pathHtml()}
+  <div><div class="eyebrow"><span>The exam</span></div><h2>What the CCAF exam tests</h2></div>
+  <section><p>The Claude Certified Architect – Foundations exam checks whether you can make sound design decisions when you build real products with Claude. It covers four technologies: Claude Code, the Claude Agent SDK, the Claude API and {{mcp}}. It asks about judgment more than about memorised facts.</p></section>
+  <section><h3>How the exam works</h3><ul>
+    <li>Every question is multiple choice: one right answer and three {{distractor|distractors}}.</li>
+    <li>Questions are grouped around realistic scenarios. You get 4 of the 6 scenarios on this map, picked at random.</li>
+    <li>The result is pass or fail, based on a scaled score. A blank answer counts as wrong, and there is no penalty for guessing, so always answer.</li>
+    <li>The ideal candidate has about 6 months of hands-on work with these tools. This map is for people who don't, yet.</li>
+  </ul></section>
+  <section><h3>The five domains</h3><p class="note">Bar length shows each domain's share of the exam. Select one to open it.</p><div class="weights">${weights}</div></section>
+  <section><h3>How to use this map</h3><ul>
+    <li>New to software development? Start with the <b>Basics</b> bubble at the top. It teaches the words the questions take for granted.</li>
+    <li>Click a bubble to open it. Solid lines lead to the topics inside it. Dotted lines lead to scenarios and worked cases.</li>
+    <li>The ring around each bubble shows your progress in three parts: lesson read, cases worked through, self-check passed.</li>
+    <li>Hover or tap any <span class="term" tabindex="0" data-g="distractor">dotted word</span> for a plain definition.</li>
+    <li>When a topic feels clear, ask Richard, the tutor in this repo, to quiz you on it. Each lesson has a ready prompt.</li>
+  </ul></section>
+  <section><div class="drift"><b>Prototype</b>Only Domain 3 (Claude Code) has full lessons so far. The other four show their outline.</div></section>`;
+}
+function domainHtml(d) {
+  if (d.isBasics) {
+    const gaps = progress.profile ? progress.profile.gaps : [];
+    const list = d.tasks.map(t => `<button type="button" data-go="${t.id}"><span class="n">${t.code}${gaps.includes(t.id) ? "<br>gap" : ""}</span><span>${esc(t.name)}${progress.read[t.id] ? " ✓" : ""}</span></button>`).join("");
+    return `
+  <div><div class="eyebrow"><span class="chip">Basics</span><span>Not scored on its own</span></div><h2>${esc(d.name)}</h2></div>
+  <section><h3>What it is</h3><p>${rich(d.what)}</p></section>
+  <section><h3>Why it matters</h3><p>${rich(d.why)}</p></section>
+  <section><h3>The lessons</h3><p>${rich(d.order)}</p><div class="tasklist">${list}</div></section>`;
+  }
+  const scen = SCENARIOS.filter(s => s.domains.includes(d.id)).map(s => `Scenario ${s.n} (${s.name})`).join(", ");
+  if (!d.ready) return `
+  <div><div class="eyebrow"><span class="chip">${d.code}</span><span>${d.weight}% of the exam</span></div><h2>${esc(d.name)}</h2></div>
+  <section><h3>What it is</h3><p>${rich(d.what)}</p></section>
+  <section><h3>Where it shows up</h3><p>${scen}.</p></section>
+  <section><div class="drift"><b>Lessons coming soon</b>This domain will get the same lessons, cases and self-checks as Domain 3.</div></section>`;
+  const list = d.tasks.map(t => `<button type="button" data-go="${t.id}"><span class="n">Step ${t.step}<br>${t.code}</span><span>${esc(t.name)}</span></button>`).join("");
+  return `
+  <div><div class="eyebrow"><span class="chip">${d.code}</span><span>${d.weight}% of the exam</span></div><h2>${esc(d.name)}</h2></div>
+  <section><h3>What it is</h3><p>${rich(d.what)}</p></section>
+  <section><h3>Why the exam cares</h3><p>${rich(d.why)}</p></section>
+  <section><h3>Suggested order</h3><p>${rich(d.order)}</p><div class="tasklist">${list}</div></section>
+  <section><h3>Where it shows up</h3><p>${scen}. The dotted bubbles on the map open each one.</p></section>`;
+}
+function taskHtml(t) {
+  const d = byId[t.domain];
+  const isBasic = t.domain === "b0";
+  const pf = progress.profile;
+  const usedIn = isBasic ? TASKS.filter(x => x.know && x.know.includes(t.id)) : [];
+  const chip = x => `<button type="button" data-go="${x.id}" class="${progress.read[x.id] ? "done" : ""}">${x.code} ${esc(x.short)}</button>`;
+  const cases = t.cases.map(c => `
+    <details class="case" data-case="${c.id}"><summary><span>${esc(c.title)}</span><span class="scen">S${c.scen}</span></summary>
+    <div class="body">
+      <div class="step"><b>Situation</b><span>${esc(c.situation)}</span></div>
+      <div class="step wrong"><b>${c.labels ? c.labels[0] : "Tempting"}</b><span>${esc(c.tempting)}</span></div>
+      <div class="step right"><b>${c.labels ? c.labels[1] : "What works"}</b><span>${esc(c.works)}</span></div>
+      <div class="step"><b>Why</b><span>${esc(c.why)}</span></div>
+      <div class="step"><b>The trap</b><span>${esc(c.trap)}</span></div>
+    </div></details>`).join("");
+  const checks = t.checks.map(k => checkHtml(k)).join("");
+  const docs = t.docs.map(([label, url]) => url ? `<li><a href="${url}" target="_blank" rel="noopener">${esc(label)}</a></li>` : `<li>${esc(label)}</li>`).join("");
+  const prompt = isBasic ? `Richard, explain ${t.name.toLowerCase()} in plain words with an example from my job, then ask me 3 quick questions.` : `Richard, quiz me on T${t.code} (${t.name.toLowerCase()}). 5 questions, quick mode.`;
+  const bridge = pf && t.bridge && t.bridge[pf.role];
+  const read = !!progress.read[t.id];
+  return `
+  <div><div class="eyebrow"><span class="chip">${isBasic ? "Basics" : d.code} · Step ${t.step} of ${d.tasks.length}</span><span>${isBasic ? t.code : "Task " + t.code}</span></div><h2>${esc(t.name)}</h2></div>
+  ${t.plain && !(pf && pf.track === "C") ? `<section class="plain"><p style="margin:0"><b>In plain terms</b>${rich(t.plain)}</p></section>` : ""}
+  ${t.know ? `<section><h3>Know these first</h3><div class="chips">${t.know.map(id => chip(byId[id])).join("")}</div></section>` : ""}
+  <section><h3>What it is</h3><p>${rich(t.what)}</p></section>
+  <section><h3>Why the exam cares</h3><p>${rich(t.why)}</p></section>
+  <section><h3>Key ideas</h3><ul>${t.ideas.map(i => `<li>${rich(i)}</li>`).join("")}</ul></section>
+  ${bridge ? `<section class="bridge"><b>From your job</b>${rich(bridge)}</section>` : ""}
+  ${t.drift ? `<section><div class="drift"><b>Exam vs today's Claude Code</b>${rich(t.drift)}</div></section>` : ""}
+  <section><div class="actions"><button class="btn" type="button" id="mark-read" aria-pressed="${read}">${read ? "Lesson read ✓" : "Mark lesson as read"}</button></div></section>
+  <section><h3>${isBasic ? "How it shows up in a question" : "Worked cases"}</h3><p class="note">${isBasic ? "A typical exam situation where this word decides the answer." : "Each case is drawn from one of the six exam scenarios (S1–S6). Open one to see the tempting move and what actually works."}</p>${cases}</section>
+  <section><h3>Check yourself</h3><p class="note">Your first answer counts toward the ring. These are not the practice-exam questions, so they won't spoil Richard's quizzes.</p>${checks}</section>
+  <section><h3>Practise with Richard</h3><p class="note">Copy this into Claude Code in the ccaf repo:</p><textarea class="copybox" id="prompt" rows="2" readonly>${esc(prompt)}</textarea><div class="actions"><button class="btn ghost" type="button" id="copy">Copy prompt</button></div></section>
+  ${usedIn.length ? `<section><h3>Used in these topics</h3><div class="chips">${usedIn.map(chip).join("")}</div></section>` : ""}
+  ${docs ? `<section><h3>Go deeper</h3><ul>${docs}</ul></section>` : ""}`;
+}
+function checkHtml(k) {
+  const done = k.id in firstAnswer ? firstAnswer[k.id] : (progress.checks[k.id] ? k.a : null);
+  return `<div class="check" data-check="${k.id}"><p>${esc(k.q)}</p><div class="opts">${k.opts.map((o, i) => `<button type="button" data-i="${i}">${String.fromCharCode(65 + i)}) ${esc(o)}</button>`).join("")}</div><div class="why" hidden></div>${done !== null ? "" : ""}</div>`;
+}
+function wirePanel(n) {
+  panel.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => activate(b.dataset.go)));
+  panel.querySelectorAll("details.case").forEach(d => d.addEventListener("toggle", () => { if (d.open) { markCase(d.dataset.case); paintAll(); } }));
+  const mr = panel.querySelector("#mark-read");
+  if (mr) mr.addEventListener("click", () => {
+    progress.read[n.id] = !progress.read[n.id]; save();
+    mr.setAttribute("aria-pressed", String(!!progress.read[n.id])); mr.textContent = progress.read[n.id] ? "Lesson read ✓" : "Mark lesson as read"; paintAll();
+  });
+  const cp = panel.querySelector("#copy");
+  if (cp) cp.addEventListener("click", () => {
+    const ta = panel.querySelector("#prompt");
+    const done = () => { cp.textContent = "Copied"; setTimeout(() => cp.textContent = "Copy prompt", 1600); };
+    try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.select(); cp.textContent = "Press Ctrl+C to copy"; }); }
+    catch (e) { ta.select(); cp.textContent = "Press Ctrl+C to copy"; }
+  });
+  panel.querySelectorAll(".check").forEach(box => {
+    const k = n.checks.find(c => c.id === box.dataset.check);
+    const prior = progress.checks[k.id] ? k.a : (k.id in firstAnswer ? firstAnswer[k.id] : null);
+    if (prior !== null) showResult(box, k, prior);
+    box.querySelectorAll(".opts button").forEach(b => b.addEventListener("click", () => {
+      const i = +b.dataset.i;
+      if (!(k.id in firstAnswer) && !progress.checks[k.id]) { firstAnswer[k.id] = i; if (i === k.a) { progress.checks[k.id] = true; save(); paintAll(); } }
+      showResult(box, k, i);
+    }));
+  });
+}
+function showResult(box, k, i) {
+  box.querySelectorAll(".opts button").forEach((b, j) => { b.disabled = true; b.classList.toggle("right", j === k.a); b.classList.toggle("wrong", j === i && i !== k.a); });
+  const w = box.querySelector(".why"); w.hidden = false;
+  w.innerHTML = `<b>${i === k.a ? "Right." : "Not quite."}</b> ${esc(k.why)}`;
+  if (!box.querySelector(".again")) {
+    const again = document.createElement("button"); again.type = "button"; again.className = "again"; again.textContent = "Try again";
+    again.addEventListener("click", () => { box.querySelectorAll(".opts button").forEach(b => { b.disabled = false; b.classList.remove("right", "wrong"); }); w.hidden = true; again.remove(); });
+    box.appendChild(again);
+  }
+}
+function showScenario(s) {
+  const doms = s.domains.map(id => `<button type="button" class="btn ghost" data-go="${id}">${byId[id].code} ${esc(byId[id].short)}</button>`).join("");
+  const html = `<section class="drift" style="border-left-color:var(--scen)"><b>Scenario ${s.n}: ${esc(s.title)}</b><p style="margin:6px 0 10px">${rich(s.text)}</p><span class="note">Main domains in this scenario:</span><div class="actions" style="margin-top:6px">${doms}</div></section>`;
+  renderPanel(html);
+  panel.scrollTop = 0;
+}
+function paintAll() { L.visible.forEach(id => paintNode(byId[id])); }
+
+document.getElementById("reset").addEventListener("click", function () {
+  if (this.dataset.armed) {
+    progress = { read: {}, cases: {}, checks: {}, profile: progress.profile, skipped: progress.skipped }; firstAnswer = {}; save();
+    delete this.dataset.armed; this.textContent = "Reset progress"; paintAll(); renderPanel();
+  } else {
+    this.dataset.armed = "1"; this.textContent = "Click again to reset";
+    setTimeout(() => { delete this.dataset.armed; this.textContent = "Reset progress"; }, 3000);
+  }
+});
+
+/* ---------- Glossary tooltip ---------- */
+const tip = document.getElementById("tip");
+function showTip(t) {
+  const g = GLOSSARY[t.dataset.g]; if (!g) return;
+  tip.innerHTML = `<b>${esc(g[0])}</b>${esc(g[1])}`; tip.hidden = false;
+  const r = t.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = Math.min(window.innerWidth - tw - 8, Math.max(8, r.left + r.width / 2 - tw / 2));
+  let y = r.top - th - 8; if (y < 8) y = r.bottom + 8;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+document.addEventListener("mouseover", e => { const t = e.target.closest(".term"); if (t) showTip(t); });
+document.addEventListener("mouseout", e => { if (e.target.closest(".term")) tip.hidden = true; });
+document.addEventListener("focusin", e => { const t = e.target.closest(".term"); if (t) showTip(t); });
+document.addEventListener("focusout", e => { if (e.target.closest(".term")) tip.hidden = true; });
+document.addEventListener("click", e => { const t = e.target.closest(".term"); if (t) { tip.hidden ? showTip(t) : (tip.hidden = true); } });
+panel.addEventListener("scroll", () => { tip.hidden = true; });
+
+
+/* ---------- Personal path ---------- */
+function learningPath() {
+  const pf = progress.profile; if (!pf) return [];
+  const all = ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8"];
+  const basics = pf.track === "A" ? all : pf.track === "B" ? pf.gaps : [];
+  return [...basics, "b9", ...byId.d3.tasks.map(t => t.id)];
+}
+function nextStep() { return learningPath().find(id => !progress.read[id]) || null; }
+function pathHtml() {
+  const pf = progress.profile;
+  if (!pf) return `<section class="plain"><h3>Find your starting point</h3><p>Answer a few questions about your role and experience (about 5 minutes). The map then shows where to start and what to skip.</p><div class="actions"><button class="btn" type="button" data-onb="1">Start placement</button></div></section>`;
+  const nx = nextStep();
+  const items = learningPath().map(id => {
+    const n = byId[id], done = !!progress.read[id], isNext = id === nx;
+    const st = done ? "Done" : isNext ? "Next" : pf.gaps.includes(id) ? "Fill this gap" : "To do";
+    return `<button type="button" data-go="${id}" class="${done ? "done" : ""} ${isNext ? "next" : ""}"><span>${esc(n.code)} · ${esc(n.name)}</span><span class="st">${st}</span></button>`;
+  }).join("");
+  const role = (ROLES.find(r => r[0] === pf.role) || ["", "Learner"])[1];
+  return `<section><div class="eyebrow"><span class="track">Track ${pf.track}: ${TRACKS[pf.track][0]}</span><span>${esc(role)}</span></div>
+    <h2 style="font-size:1.35rem">Your path</h2><p>${TRACKS[pf.track][1]} A lesson counts as done when you mark it as read.</p>
+    <div class="path">${items}</div><p class="note">Domains 1, 2, 4 and 5 join the path when their lessons are ready.</p>
+    <div class="actions"><button class="btn ghost" type="button" data-onb="1">Retake placement</button></div></section>`;
+}
+
+/* ---------- Onboarding ---------- */
+const onbEl = document.getElementById("onb"), onbCard = document.getElementById("onb-card");
+let onb = null;
+function probeSet(role, exp) {
+  const has = k => exp.includes(k);
+  if (role === "dev") return ["p6", "p7", "c1", "c2", "c3", "c4"].concat(has("e_git") ? [] : ["p2"], has("e_term") ? [] : ["p3"], has("e_json") ? [] : ["p4"], has("e_ci") ? [] : ["p8"]);
+  if (role === "ops") return ["p4", "p5", "p6", "p7", "c1", "c2"].concat(has("e_git") ? [] : ["p2"]);
+  if (role === "qa") return ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"].concat(has("e_cc") ? ["c1"] : []);
+  return ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"];
+}
+function place() {
+  const gaps = []; let concepts = 0;
+  onb.probes.forEach(pid => { const pr = PROBES[pid], ok = onb.answers[pid] === pr.a; if (pr.basic && !ok) gaps.push(pr.basic); if (pr.concept && ok) concepts++; });
+  gaps.sort();
+  const devish = onb.role === "dev" || onb.role === "ops";
+  let track = gaps.length <= 2 ? "B" : "A";
+  if (devish && (onb.exp.includes("e_cc") || onb.exp.includes("e_sdk")) && concepts >= 3 && gaps.length <= 1) track = "C";
+  return { role: onb.role, exp: onb.exp, gaps, track, concepts, date: new Date().toISOString().slice(0, 10) };
+}
+function openOnboarding() { onb = { step: "role", role: null, exp: [], probes: [], i: 0, answers: {}, result: null }; onbEl.hidden = false; drawOnb(); }
+function closeOnboarding(skipped) { onbEl.hidden = true; if (skipped && !progress.profile) { progress.skipped = true; save(); } if (progress.profile) { render(); renderPanel(); } }
+function richardPrompt(r) {
+  const role = ROLES.find(x => x[0] === r.role)[1];
+  const used = r.exp.map(k => EXP.find(e => e[0] === k)[1].toLowerCase());
+  const gaps = r.gaps.map(id => byId[id].name.toLowerCase());
+  return `Richard, I'm starting CCAF prep. My role: ${role}. Study map placement: Track ${r.track} (${TRACKS[r.track][0].toLowerCase()}). ` +
+    `Basics to strengthen: ${gaps.length ? gaps.join("; ") : "none"}. Things I've done myself: ${used.length ? used.join("; ") : "none of the listed ones"}. ` +
+    `Please set my starting level from this, explain technical words in plain language, and use examples from my job.`;
+}
+function drawOnb() {
+  let h = "";
+  if (onb.step === "role") {
+    h = `<div class="onb-steps">Step 1 of 3 · Your role</div><h2 id="onb-title">What do you do for a living?</h2>
+      <p>This decides which basics we check and which we skip. Nothing leaves your browser.</p>
+      <div class="choices">${ROLES.map(([k, l]) => `<button type="button" data-role="${k}">${esc(l)}</button>`).join("")}</div>
+      <div class="onb-foot"><button type="button" class="linkbtn" data-skip="1">Skip for now</button></div>`;
+  } else if (onb.step === "exp") {
+    h = `<div class="onb-steps">Step 2 of 3 · Your experience</div><h2 id="onb-title">Which of these have you done yourself?</h2>
+      <p>Tick only what you've actually done, even once. It's fine to tick nothing.</p>
+      <div class="choices">${EXP.map(([k, l]) => `<label><input type="checkbox" id="exp-${k}" value="${k}" ${onb.exp.includes(k) ? "checked" : ""}>${esc(l)}</label>`).join("")}</div>
+      <div class="onb-foot"><button type="button" class="linkbtn" data-back="role">Back</button><button type="button" class="btn" data-next="probe">Continue</button></div>`;
+  } else if (onb.step === "probe") {
+    const pid = onb.probes[onb.i], pr = PROBES[pid];
+    h = `<div class="onb-steps">Step 3 of 3 · Question ${onb.i + 1} of ${onb.probes.length}</div><h2 id="onb-title">${esc(pr.q)}</h2>
+      <p class="note">Don't guess here. “Not sure” is the most useful answer when it's true: it shows what to teach you.</p>
+      <div class="choices">${pr.opts.map((o, i) => `<button type="button" data-ans="${i}">${String.fromCharCode(65 + i)}) ${esc(o)}</button>`).join("")}
+      <button type="button" class="unsure" data-ans="-1">Not sure</button></div>`;
+  } else {
+    const r = onb.result;
+    const gaps = r.gaps.length ? `<ul>${r.gaps.map(id => `<li>${esc(byId[id].code)} · ${esc(byId[id].name)}</li>`).join("")}</ul>` : "<p>No gaps in the basics we checked.</p>";
+    h = `<div class="onb-steps">Your starting point</div><h2 id="onb-title"><span class="track">Track ${r.track}</span> ${TRACKS[r.track][0]}</h2>
+      <p>${TRACKS[r.track][1]}</p>
+      <div><h3 style="margin:0 0 6px;font:700 1rem var(--font-display)">Basics to strengthen</h3>${gaps}</div>
+      <div><h3 style="margin:0 0 6px;font:700 1rem var(--font-display)">Tell Richard</h3><p class="note">Paste this into Claude Code in the ccaf repo, so the tutor starts at your level:</p>
+      <textarea class="copybox" id="onb-prompt" rows="4" readonly>${esc(richardPrompt(r))}</textarea>
+      <div class="actions" style="margin-top:6px"><button type="button" class="btn ghost" id="onb-copy">Copy prompt</button></div></div>
+      <div class="onb-foot"><button type="button" class="linkbtn" data-back="role">Start over</button><button type="button" class="btn" data-done="1">Show my path</button></div>`;
+  }
+  onbCard.innerHTML = h;
+  const first = onbCard.querySelector("button, input"); if (first) first.focus();
+}
+onbCard.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.skip) return closeOnboarding(true);
+  if (b.dataset.role) { onb.role = b.dataset.role; onb.step = "exp"; return drawOnb(); }
+  if (b.dataset.back) { onb.step = b.dataset.back; onb.i = 0; onb.answers = {}; return drawOnb(); }
+  if (b.dataset.next) { onb.exp = [...onbCard.querySelectorAll("input:checked")].map(i => i.value); onb.probes = probeSet(onb.role, onb.exp); onb.i = 0; onb.answers = {}; onb.step = "probe"; return drawOnb(); }
+  if (b.dataset.ans !== undefined) {
+    onb.answers[onb.probes[onb.i]] = +b.dataset.ans;
+    if (onb.i < onb.probes.length - 1) { onb.i++; } else { onb.result = place(); progress.profile = onb.result; save(); onb.step = "result"; }
+    return drawOnb();
+  }
+  if (b.id === "onb-copy") {
+    const ta = onbCard.querySelector("#onb-prompt");
+    try { navigator.clipboard.writeText(ta.value).then(() => { b.textContent = "Copied"; }, () => { ta.select(); b.textContent = "Press Ctrl+C to copy"; }); }
+    catch (err) { ta.select(); b.textContent = "Press Ctrl+C to copy"; }
+    return;
+  }
+  if (b.dataset.done) { closeOnboarding(false); focus = "root"; openCase = null; render(); renderPanel(); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !onbEl.hidden) closeOnboarding(true); });
+document.getElementById("placement").addEventListener("click", openOnboarding);
+panel.addEventListener("click", e => { if (e.target.closest("[data-onb]")) openOnboarding(); });
+
+/* ---------- Legend pie ---------- */
+(function () { const g = document.getElementById("legend-pie"); drawRing(g, 8.5, [1, 0.6, 0.3], "var(--d3)"); })();
+
+render();
+renderPanel();
+if (!progress.profile && !progress.skipped) openOnboarding();
+</script>
+</body>
+</html>

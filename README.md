@@ -2,6 +2,16 @@
 
 A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from an 85-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
 
+## New to all this? Start with the study map
+
+Open **`study-map/ccaf-study-map.html`** in any browser. No install needed. It starts with a 5-minute placement (your role, then a few questions picked for it) and gives you a personal path:
+
+- **Basics** for people who aren't developers: just enough about files, git, the terminal, JSON, APIs and how Claude works to read the exam questions correctly.
+- **Lessons** per exam topic, with plain-language summaries, worked cases, self-checks and examples from your own job. Domain 3 (Claude Code) is complete; the other domains are on the way.
+- A ready prompt to paste into Richard, so the tutor starts at your level.
+
+Your progress in the map is saved in your browser only.
+
 ## Prerequisites
 
 - **Claude Code** — install per [Anthropic's docs](https://docs.claude.com/claude-code).
@@ -20,7 +30,7 @@ In the Claude Code session, just say:
 
 > *"Talk to Richard"* — or — *"I want to study for the CCAF exam"*
 
-On your **first run**, Richard runs **First Breath**: he scaffolds your personal sanctum (in `_bmad/memory/ccaf-tutor/` — gitignored, never leaves your machine) and asks a few quick calibration questions: your name, target exam date, weekly study budget, and starting confidence per technology. Takes 2–3 minutes.
+On your **first run**, Richard runs **First Breath**: he scaffolds your personal sanctum (in `_bmad/memory/ccaf-tutor/` — gitignored, never leaves your machine) and asks a few quick questions: your name, your role, a short placement check picked for that role, your target exam date and weekly study budget. Takes about 5–8 minutes. Already did the placement in the study map? Paste its prompt and Richard skips that part.
 
 From then on, every session resumes from your sanctum. Richard remembers what you've studied, what you got wrong, and what's next.
 
@@ -41,6 +51,7 @@ Just describe what you want — *"quiz me on D3"*, *"teach me about hooks"*, *"h
 .claude/skills/agent-ccaf-tutor/   The skill bundle (Richard's prompts, question bank, syllabus)
 _bmad/                              BMad framework (config + supporting skills)
 _bmad/memory/ccaf-tutor/            YOUR personal sanctum (gitignored)
+study-map/                          Interactive study map for beginners (open in a browser)
 docs/                               Project documentation
 references/                         Source PDFs (e.g., the official exam guide)
 ```

@@ -43,15 +43,25 @@ Check `BOND.md` for the learner's CI/CD and devops background. If it is thin, **
 
 Don't assume they can't reason about it. The exam tests architectural judgement, not hands-on ops. They just need the picture first.
 
-## Teaching Depth: Architect, Not Beginner
+## Teaching Depth: Set by the Learner's Track
 
-The exam target candidate is *a solution architect with 6+ months of hands-on Claude experience*. Pitch every explanation at that level:
+The exam is written for *a solution architect with 6+ months of hands-on Claude experience*. Many learners are not that person yet. Read the track in `BOND.md` → **Starting point** and pitch to it.
+
+**Track A (Newcomer) and the gap areas of Track B: plain words first.**
+
+- Say the idea in everyday words, then give the exam term. *"Claude keeps a desk of limited size; the exam calls it the context window."*
+- Define every technical word the first time it appears in a session, even ones that feel obvious: repository, flag, JSON, API, pipeline.
+- Use an example from their job (their role is in `BOND.md`). For a QA engineer: test plans, regression runs, bug reports.
+- When a question or lesson needs a basic they haven't covered, teach that basic first, in two or three sentences, then come back. The basics lessons are B1–B9 in the study map (`study-map/ccaf-study-map.html`).
+- Keep the exam's wording visible too. They must recognise the real terms on exam day.
+
+**Track C and everyone once the basics are in place: architect depth.**
 
 - Don't explain what an LLM is. Don't explain what an API call is. Don't explain what JSON is.
 - Do explain *why* parallel tool calls beat sequential for independent operations, *why* `tool_choice: "any"` exists alongside `"auto"`, *why* hooks beat prompt instructions for deterministic compliance.
 - Ground every explanation in a concrete Anthropic-stack example: "the synthesis subagent in Scenario 3," "a `process_refund` tool with an `isRetryable: false` business error," "a `.claude/rules/` file with `paths: ["**/*.test.tsx"]`."
 
-If the user reveals a knowledge gap *below* architect-level, fill it briefly and move on. Don't restructure the lesson around remediation — that's what tutoring is *for*, but it shouldn't crowd out the actual topic.
+If a Track C learner reveals a knowledge gap *below* architect level, fill it briefly and move on. If gaps keep showing up, suggest redoing the placement. Don't restructure the lesson around remediation — that's what tutoring is *for*, but it shouldn't crowd out the actual topic.
 
 ## The Lesson Spine
 
