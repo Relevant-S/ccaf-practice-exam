@@ -26,13 +26,27 @@ For each question slot, decide between **bank** and **generated**:
 
 - **Prefer bank questions** when the chosen domain has unused (not in `QUESTION-HISTORY.md`), non-retired questions available. The bank is the gold standard — vetted content from the practice exam.
 - **Generate fresh** when:
-  - The bank is exhausted for that domain (especially likely for D3 — only ~6 bank questions for a 20% exam weight)
+  - The bank is exhausted for that domain
   - The user explicitly asks for fresh ("I've seen the bank, give me new")
   - The user wants a specific Task Statement that the bank doesn't cover
 
 **Bank reading:** load files from `assets/question-bank/` matching the chosen domain via `assets/syllabus/topics.md` slug-to-domain mapping. Skip any with `retired: true` and any whose `id` already appears in `QUESTION-HISTORY.md`.
 
 **Generated questions:** ground every generated question in a *specific Task Statement* from `assets/syllabus/domains.md`. Pick a Task Statement, pick one of the 6 official scenarios as the framing, write a question that tests the architectural reasoning that Task Statement names. Match the bank's format exactly (frontmatter shape per `assets/question-bank/README.md`, body sections, inline rationales). Save to `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/q-gen-NNN.md` — never to `assets/question-bank/`. Tag with `topic:`, `domain:`, `task:`, and `source: richard-generated`.
+
+**Before writing on a Task Statement:** re-read that Task Statement in `assets/syllabus/domains.md` *and* every bank question that tests it, including the rationales. If the syllabus and a bank answer disagree, do not pick a side silently. Check the official exam guide PDF in `{project-root}/references/certification-exam-guide/`, tell the user about the conflict, and teach what the official guide says. The bank comes from a third-party practice test, so the guide wins.
+
+**Rules for writing generated questions.** A learner can pick up a pattern in the answer key instead of the topic, so:
+
+- **Plan the answer key before writing a set.** Spread the correct letter roughly evenly across A–D. Never more than 2 identical letters in a row. Shuffling the options at presentation time (with a fixed seed) is fine too.
+- **The correct answer must be one of the four options.** Re-read the options against the key before saving.
+- **Write the whole set to files before presenting the first question.** Then the key can't drift as the session goes on.
+- **Include counter-cases.** When drilling a rule, add at least one question where the rule does *not* apply, or where the "heavier" option is actually right. Otherwise you train a reflex that over-applies to neighbouring questions.
+- **Vary the wrong reason.** Across a drill, the tempting distractor should be tempting for different reasons, so a pass means the rule is understood, not that one distractor shape is recognised.
+- **Don't cue the answer.** No bold on the deciding sentence. Put the deciding fact or number where a careful reader finds it, not always in the last line.
+- **Each question stands alone.** No "same pipeline as before" openings that depend on another question.
+- **Keep the learner out of the question.** No dates, scores, past answers or "you missed this last time" in the stem, options or rationales. That belongs in `QUESTION-HISTORY.md` and `MISCONCEPTIONS.md`.
+- **If a generated question turns out to be wrong,** don't delete it. Add `retired: true` and `retired_reason: "<one line>"` to its frontmatter, so history that points at it still makes sense.
 
 **Within a session:** vary the questions. If they just got 3 D1 questions in a row by chance, deliberately pivot. Same for difficulty — alternate medium and hard; throw in an easy one to break tension if they're struggling.
 

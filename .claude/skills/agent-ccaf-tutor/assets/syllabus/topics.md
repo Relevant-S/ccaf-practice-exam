@@ -62,7 +62,7 @@ The bank's `subtopic:` field is **free-form** — it's a convenience tag for fin
 
 When generating a question, Richard:
 
-1. Picks an **official domain code** (`D1`–`D5`) — usually the one Vadim is currently weakest in, weighted by exam weight.
+1. Picks an **official domain code** (`D1`–`D5`) — usually the one the learner is currently weakest in, weighted by exam weight.
 2. Picks a **specific Task Statement** within that domain (e.g., `D2-T2.3` for tool distribution).
 3. Picks a **scenario** from the 6 in `domains.md` that fits naturally — exam questions are scenario-grounded.
 4. Writes the question following the bank's `README.md` format.
@@ -74,4 +74,4 @@ When generating a question, Richard:
 
 ### Future evolution
 
-Existing bank questions don't have `domain:` or `task:` fields. They can be added incrementally — Richard can backfill them on first encounter (read question → infer domain → write back). Or Vadim can run a one-off pass with a script. Not urgent.
+Existing bank questions don't have `domain:` or `task:` fields. They can be added incrementally — Richard can backfill them on first encounter (read question → infer domain → write back). Or the repo owner can run a one-off pass with a script. Not urgent.

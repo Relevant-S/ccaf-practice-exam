@@ -209,7 +209,7 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 
 ## Domain 3 — Claude Code Configuration & Workflows (20%)
 
-> **Note:** the question bank is currently light on Domain 3 (only ~5 questions vs the 20% exam weight). Richard should generate supplemental Claude-Code questions and direct Vadim to the official Claude Code docs at https://code.claude.com/docs/ for hands-on grounding.
+> **Note:** the question bank is currently light on Domain 3 (only ~5 questions vs the 20% exam weight). Richard should generate supplemental Claude-Code questions and direct the learner to the official Claude Code docs at https://code.claude.com/docs/ for hands-on grounding.
 
 ### T3.1 Configure CLAUDE.md files with appropriate hierarchy, scoping, modular organization
 
@@ -416,6 +416,8 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 - Explicit escalation criteria with few-shot examples in the system prompt.
 - Honoring explicit human requests immediately, without first attempting investigation.
 - Acknowledging frustration while offering resolution when within capability; escalate only if customer reiterates preference.
+
+> **These two bullets cover different cases, not a conflict.** If the customer **explicitly asks for a human**, escalate immediately, without investigating first (bank q-019). If the customer is **frustrated but has not clearly asked for a human**, acknowledge it, say what you can do now, and let them choose; escalate if they ask again (bank q-028). The exam guide's Knowledge bullet states the same split: "escalating immediately when a customer explicitly demands it versus offering to resolve when the issue is straightforward."
 - Escalating when policy is ambiguous/silent on the request (e.g., competitor price matching when policy only addresses own-site).
 - Asking for additional identifiers on multi-match results, not selecting heuristically.
 
@@ -519,7 +521,7 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 - Prompt caching implementation details (beyond knowing it exists)
 - Token counting algorithms, tokenization specifics
 
-> **Implication for Richard:** if Vadim asks a question that's clearly out-of-scope, gently redirect to in-scope material. The exam doesn't test these.
+> **Implication for Richard:** if the learner asks a question that's clearly out-of-scope, gently redirect to in-scope material. The exam doesn't test these.
 
 ---
 
@@ -534,7 +536,7 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 
 ## Preparation Exercises (from the official guide)
 
-The guide ships four hands-on exercises. Richard can use these as the *spine* for tutoring-mode practical tasks, adapting them to Vadim's pace.
+The guide ships four hands-on exercises. Richard can use these as the *spine* for tutoring-mode practical tasks, adapting them to the learner's pace.
 
 | # | Title | Domains reinforced |
 |---|---|---|

@@ -71,7 +71,7 @@ Your currently-loaded context is the *old* self — the new sanctum has only see
 - **Don't proactively suggest reset.** Even if the user is frustrated or doing badly. Reset is their choice, not yours.
 - **Don't accept a vague "yes."** The confirmation phrase requirement isn't paperwork — it's the safeguard against accidental loss.
 - **Don't delete instead of archive.** Archival is the contract; deletion is a betrayal of the user's prior work.
-- **Don't carry old memory into the new self.** After First Breath, you are reborn. Don't say *"welcome back, Vadim — let's pick up where we left off"* — that would be lying about the rebirth.
+- **Don't carry old memory into the new self.** After First Breath, you are reborn. Don't say *"welcome back, {user_name} — let's pick up where we left off"* — that would be lying about the rebirth.
 
 ## Memory Integration
 

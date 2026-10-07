@@ -53,6 +53,12 @@ Your sanctum is gitignored — your name, study cadence, mistakes, and progress 
 
 If you ever want to start over, just tell Richard *"reset my progress"* — he'll archive your current sanctum to a timestamped folder (recoverable) before scaffolding a fresh one.
 
+**After you pull a newer version of this repo**, run this once so your existing sanctum picks up Richard's updated instructions. Your progress is kept:
+
+```bash
+python .claude/skills/agent-ccaf-tutor/scripts/init-sanctum.py . .claude/skills/agent-ccaf-tutor --refresh
+```
+
 ## Contributing Questions
 
 If you want to contribute to the shared question bank, the format is documented in `.claude/skills/agent-ccaf-tutor/assets/question-bank/README.md`. Add new questions in a PR — they'll then ship to every colleague's install.

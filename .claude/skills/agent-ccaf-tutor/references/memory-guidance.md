@@ -101,7 +101,19 @@ The append-only log of every question presented (bank or generated), the user's 
 
 The pattern library. Each entry is a wrong-reasoning pattern, the Task Statement(s) it appears in, the questions that surfaced it, and a count + recency.
 
-**Curate:** when a misconception has been resolved (3 consecutive correct answers in the relevant Task Statement), mark it `resolved: true` with a date. Don't delete — the resolution date is useful context.
+A misconception counts as **resolved** only when all of these hold:
+
+- **Cold.** The correct answers came after a real gap (a later session), not right after the tutoring that targeted it. A sitting straight after teaching is only *provisional*.
+- **Right reasoning.** A correct letter with wrong or missing reasoning does not count. Ask for the reasoning before logging it as a confirmation.
+- **First answer.** Grade the first answer, not the self-correction that follows.
+- **A counter-case passed.** At least one of the questions was built so that the drilled answer is *wrong* (an adjacent case where the rule doesn't apply).
+- **A bank question agrees.** Confirmations on Richard's own generated questions did not carry over to bank wording. At least one confirming answer must be on a bank question.
+
+When a misconception seems to recur, re-read the learner's reasoning before adding to its count. The pattern may have changed shape and need its own entry.
+
+**Curate:** when a misconception is resolved, mark it `resolved: true` with a date and move it to Resolved Patterns. Don't delete — the resolution date is useful context. When you update a pattern, edit its one entry; never add a second entry with the same name.
+
+**Richard's own errors** (a wrong rule taught, a wrong answer key, a grading mistake) go in an `## Errata` section at the bottom of this file, not under Active Patterns. They are not the learner's misconception.
 
 ### `PRACTICAL-TASKS.md`
 
@@ -123,6 +135,8 @@ Log of practical tasks Richard assigned during tutoring, the user's submission s
 
 **Every time you create a new organic file or folder, update INDEX.md.**
 
+**Write files with the Write tool, not shell heredocs.** Heredocs break easily on quotes and backticks, and question files are full of both.
+
 ## When to Write
 
 - **End of session, every time** — append to `sessions/YYYY-MM-DD.md`. Mode, what happened, mastery deltas, misconceptions surfaced, follow-up.
@@ -137,11 +151,17 @@ Log of practical tasks Richard assigned during tutoring, the user's submission s
 
 Your sanctum loads every session. Every token costs context. Be ruthless:
 
-- **MEMORY.md under 200 lines.** If it's longer, you're not curating hard enough.
-- **`TOPICS-MASTERY.md`** should be a structured table or compact list, not prose.
-- **`QUESTION-HISTORY.md`** rows should be terse — `id | answer | correct | date | task` — not paragraphs.
-- **`MISCONCEPTIONS.md`** — one entry per pattern, not per occurrence; merge ruthlessly.
-- **`PRACTICAL-TASKS.md`** — summarize old completed tasks; keep recent and struggling tasks full.
+Limits are in **size**, not lines. A 60-line file of long paragraphs can still be 25 KB.
+
+| File | Keep it under | How |
+|---|---|---|
+| `MEMORY.md` | ~8 KB | One current plan, not a stack. When a plan or "next step" changes, **replace** the old one. Don't add "Superseded — …" versions on top. |
+| `TOPICS-MASTERY.md` | ~8 KB | A table or compact list. Each cell is a few words, not a paragraph. Reasons go in session logs. |
+| `QUESTION-HISTORY.md` | ~15 KB | Rows like `id \| answer \| correct \| date \| task \| mode`. Notes cell at most ~10 words, or empty. |
+| `MISCONCEPTIONS.md` | ~12 KB | One entry per pattern, not per occurrence. Merge ruthlessly. Move resolved patterns to a one-line summary. |
+| `PRACTICAL-TASKS.md` | ~8 KB | Summarize old completed tasks; keep recent and struggling tasks full. |
+
+Check sizes at session close. If a file is over its limit, curate it before you finish. The detail is not lost: it is in the session logs.
 
 ## What's Off-Limits
 

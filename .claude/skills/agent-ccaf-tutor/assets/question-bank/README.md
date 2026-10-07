@@ -44,6 +44,7 @@ has_image: false           # true if the body references an image
 has_code: true             # true if the body contains a code block
 correct: B                 # A | B | C | D
 tags: [api, streaming]     # optional — free-form additional tags
+key_changed: "..."         # optional — why the answer key was changed from the source
 ---
 ```
 
@@ -239,6 +240,13 @@ The `source` field identifies where a question came from:
 - `practice-test-A`, `practice-test-B`, ... — replace with real source
   names once known (e.g. `whizlabs-2026-q1`).
 - `anthropic-docs-example` — questions derived from official documentation.
+- `cyberskill-ccaf-practice` — the third-party practice test that q-001 to
+  q-060 come from. **Not official.** Where it disagrees with the official exam
+  guide (`references/certification-exam-guide/`), the guide wins. Fix the key
+  and note the change in `key_changed`.
+- `tutor-generated-reviewed` — questions Richard generated in a learner's
+  sanctum that a human then reviewed, cleaned of personal details and promoted
+  into this folder. `source_ref` holds the original `q-gen-NNN` id.
 - `richard-generated` — **never used in this folder.** Generated
   questions live in the per-user sanctum, not here.
 
@@ -286,3 +294,9 @@ but the IDs remain stable so historical references in user sanctums
 - [ ] If `has_code: true`, code blocks have a language tag
 - [ ] Topic slug matches one in `assets/syllabus/topics.md` (or is added there)
 - [ ] Filename matches `id` field
+- [ ] The answer is backed by the official exam guide, not only by the source it came from
+- [ ] Wrong-option rationales do not start with "Correct"
+- [ ] Nothing in the stem cues the answer (no bold on the deciding sentence)
+- [ ] The question stands alone (no "same scenario as before")
+- [ ] No learner details (names, dates, scores, "you missed this")
+- [ ] Across a batch of new questions, the correct letters are spread roughly evenly over A–D

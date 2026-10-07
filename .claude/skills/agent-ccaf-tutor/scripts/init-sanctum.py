@@ -15,7 +15,7 @@ After this script runs, the sanctum is fully self-contained — the agent does
 not depend on the skill bundle location for normal operation.
 
 Usage:
-    python3 init-sanctum.py <project-root> <skill-path> [--reset]
+    python3 init-sanctum.py <project-root> <skill-path> [--reset | --refresh]
 
     project-root: The root of the project (where _bmad/ lives)
     skill-path:   Path to the skill directory (where SKILL.md, references/, assets/ live)
@@ -23,6 +23,11 @@ Usage:
                   ccaf-tutor.archive-YYYY-MM-DD-HHMMSS) before scaffolding fresh.
                   Existing data is preserved on disk; the user can restore by
                   renaming the archive folder back.
+    --refresh:    If the sanctum already exists, re-copy references/ and scripts/
+                  from the skill and regenerate CAPABILITIES.md. Learner files
+                  (PERSONA, CREED, BOND, MEMORY, mastery, history, sessions,
+                  generated questions) are not touched. Use this after the skill
+                  has been updated, so an existing sanctum picks up the changes.
 """
 
 import sys
@@ -64,14 +69,14 @@ EVOLVABLE = False
 def parse_toml_config(config_path: Path) -> dict:
     """Minimal TOML parser for top-level [section] scalar values.
 
-    Reads keys like `user_name = "Vadim"` from `[core]` and other sections,
+    Reads keys like `user_name = "Alex"` from `[core]` and other sections,
     flattening into a single dict. Sufficient for the few config keys this
     script needs (user_name, communication_language).
     """
     config = {}
     if not config_path.exists():
         return config
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#") or line.startswith("["):
@@ -89,7 +94,7 @@ def parse_yaml_config(config_path: Path) -> dict:
     config = {}
     if not config_path.exists():
         return config
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -105,7 +110,7 @@ def parse_yaml_config(config_path: Path) -> dict:
 def parse_frontmatter(file_path: Path) -> dict:
     """Extract YAML frontmatter from a markdown file."""
     meta = {}
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
 
     match = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
@@ -225,10 +230,11 @@ def substitute_vars(content: str, variables: dict) -> str:
 def main():
     args = sys.argv[1:]
     reset = "--reset" in args
-    args = [a for a in args if a != "--reset"]
+    refresh = "--refresh" in args
+    args = [a for a in args if a not in ("--reset", "--refresh")]
 
-    if len(args) < 2:
-        print("Usage: python3 init-sanctum.py <project-root> <skill-path> [--reset]")
+    if len(args) < 2 or (reset and refresh):
+        print("Usage: python3 init-sanctum.py <project-root> <skill-path> [--reset | --refresh]")
         sys.exit(1)
 
     project_root = Path(args[0]).resolve()
@@ -250,6 +256,22 @@ def main():
     sanctum_refs_path = "./references"
 
     # Check if sanctum already exists
+    if refresh:
+        if not sanctum_path.exists():
+            print(f"No sanctum at {sanctum_path} — nothing to refresh. Run without --refresh first.")
+            sys.exit(1)
+        copied_refs = copy_references(references_dir, sanctum_refs)
+        copied_scripts = copy_scripts(scripts_dir, sanctum_scripts)
+        capabilities = discover_capabilities(references_dir, sanctum_refs_path)
+        (sanctum_path / "CAPABILITIES.md").write_text(
+            generate_capabilities_md(capabilities, evolvable=EVOLVABLE), encoding="utf-8"
+        )
+        print(f"Refreshed sanctum at {sanctum_path}")
+        print(f"  Re-copied {len(copied_refs)} reference files and {len(copied_scripts)} scripts")
+        print(f"  Regenerated CAPABILITIES.md ({len(capabilities)} built-in capabilities)")
+        print("  Learner files were not touched.")
+        sys.exit(0)
+
     if sanctum_path.exists():
         if reset:
             timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -261,6 +283,7 @@ def main():
         else:
             print(f"Sanctum already exists at {sanctum_path}")
             print("This agent has already been born. Skipping First Breath scaffolding.")
+            print("To pick up skill updates, re-run with --refresh (learner files are kept).")
             print("To start fresh, re-run with --reset (existing sanctum will be archived, not deleted).")
             sys.exit(0)
 
@@ -312,17 +335,17 @@ def main():
         # Fix extension casing: .MD -> .md
         output_name = output_name[:-3] + ".md"
 
-        content = template_path.read_text()
+        content = template_path.read_text(encoding="utf-8")
         content = substitute_vars(content, variables)
 
         output_path = sanctum_path / output_name
-        output_path.write_text(content)
+        output_path.write_text(content, encoding="utf-8")
         print(f"  Created {output_name}")
 
     # Auto-generate CAPABILITIES.md from references/ frontmatter
     capabilities = discover_capabilities(references_dir, sanctum_refs_path)
     capabilities_content = generate_capabilities_md(capabilities, evolvable=EVOLVABLE)
-    (sanctum_path / "CAPABILITIES.md").write_text(capabilities_content)
+    (sanctum_path / "CAPABILITIES.md").write_text(capabilities_content, encoding="utf-8")
     print(f"  Created CAPABILITIES.md ({len(capabilities)} built-in capabilities discovered)")
 
     print()

@@ -19,14 +19,14 @@ This folder is the **authoritative content map** for the *Claude Certified Archi
 ## How Richard uses these files
 
 - **At session start (any mode):** Richard does not load the entire syllabus eagerly. He loads `topics.md` (small) on first use to get the slug → domain mapping. He loads `domains.md` (larger) only when the user enters tutoring mode for a specific domain, or when generating a question.
-- **In tutoring mode:** When Vadim asks "teach me Domain 2", Richard pulls the relevant Task Statements from `domains.md` and uses the Knowledge/Skills bullets as the lesson outline. When generating practical tasks, he draws from the Skills bullets — those are the *applied* competencies the exam tests.
+- **In tutoring mode:** When the learner asks "teach me Domain 2", Richard pulls the relevant Task Statements from `domains.md` and uses the Knowledge/Skills bullets as the lesson outline. When generating practical tasks, he draws from the Skills bullets — those are the *applied* competencies the exam tests.
 - **In examination mode:** When generating a new question (not from the bank), Richard grounds it in a specific Task Statement so the question is exam-relevant, not vibes-relevant.
 - **In progress mode:** Richard rolls up bank-question results to the 5 domains via `topics.md`, then weights each domain's mastery against its exam weighting (e.g., D1 mastery counts for 27% of the projected exam score).
 
 ## What is NOT here
 
 - The question bank itself — that's `assets/question-bank/`.
-- Vadim's personal study state — that's the per-user sanctum at `{project-root}/_bmad/memory/ccaf-tutor/`.
+- The learner's personal study state — that's the per-user sanctum at `{project-root}/_bmad/memory/ccaf-tutor/`.
 - External documentation — referenced from `domains.md` per domain, but not vendored here. Authoritative sources include:
   - Anthropic Claude API docs: https://docs.claude.com/
   - Claude Code docs: https://code.claude.com/docs/
