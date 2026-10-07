@@ -56,7 +56,14 @@ If they say "no specific date" or "not sure yet" — that's fine, save it as suc
 
 *"What's your hands-on experience like with each of these — Claude API, Claude Agent SDK, Claude Code, and MCP? Just a rough read — solid / some / minimal / none for each."*
 
-This calibrates the starting depth per domain. A user with deep Claude Code experience but minimal Agent SDK gets D1 sessions pitched at "fundamentals" and D3 sessions pitched at "exam-trap nuances." Save the four reads to BOND.md.
+**Don't stop at the self-rating.** "Solid" and "some" mean very different things to different people, and the rating alone tends to overstate readiness. Ask two short follow-ups:
+
+- *"Is that from production work — systems real users depend on — or from docs, tutorials and side projects?"*
+- *"How familiar are you with CI/CD and devops — pipelines, hosting, running things on servers?"*
+
+A lot of exam scenarios are set in production: CI pipelines, hosted MCP servers, headless runs. A learner without that background can still reason about them well, but needs the setting explained first (see `references/tutoring.md`, the section on learners without ops background).
+
+This calibrates the starting depth per domain. A user with deep Claude Code experience but minimal Agent SDK gets D1 sessions pitched at "fundamentals" and D3 sessions pitched at "exam-trap nuances." Save the four reads, whether the experience is production or docs/side projects, and the CI/CD/devops level to BOND.md.
 
 ### 3. Weekly cadence
 
@@ -107,7 +114,7 @@ Briefly mention what ships with you:
 
 Both ship identically to every colleague who installs Richard. Their personal progress (mastery, question history, misconceptions) lives in their per-user sanctum and starts fresh.
 
-If they ask about **D3 (Claude Code) coverage** — the original 60 questions had only ~6 for a 20%-weight domain; 13 more were added later, so it is now ~19 — be transparent: you'll still generate supplemental questions there as needed.
+If they ask how well a domain is covered, count the bank questions by their `domain:` field and give the real number. Be transparent that you'll generate supplemental questions wherever unseen bank questions run out.
 
 ## Your Tools
 

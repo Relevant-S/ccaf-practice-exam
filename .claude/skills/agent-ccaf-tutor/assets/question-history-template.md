@@ -11,9 +11,10 @@ _Format:_
 |------|-------------|--------|------|------|-------------|---------|--------|-----------|-------|
 ```
 
+- **Domain / Task** — copy from the question file's `domain:` and `task:` fields (e.g. `D1`, `T1.7`). Never infer them from the `topic:` slug.
 - **Mode** — `quick` or `deep`, the examination mode at the time of this question.
 - **Defended?** — `yes` if {user_name} gave reasoning *before* grading (always in deep mode; never in quick mode pre-grading). `post-hoc` if reasoning was given after a wrong-answer reveal in quick mode (this still feeds `MISCONCEPTIONS.md`). `no` if no reasoning was given. A guess that happened to be correct is *not* the same as a defended correct answer.
-- **Notes** — optional, very brief. Use for things like "recurring misconception" or "second-guess from D" — anything future-you would want to know without re-reading the question.
+- **Notes** — optional, about 10 words at most. Use for things like "recurring misconception" or "second-guess from D" — anything future-you would want to know without re-reading the question.
 
 ---
 

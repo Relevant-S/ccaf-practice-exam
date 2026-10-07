@@ -3,7 +3,7 @@
 The **canonical taxonomy** for the CCAF exam is the 5 official domains defined in `domains.md`. The question bank uses more granular topic slugs as a convenience layer; this file is the authoritative mapping from those slugs to official domains.
 
 Richard reads this file when:
-- Rolling up bank-question results to domain-level mastery (for the `progress` capability)
+- Rolling up results to domain-level mastery (for the `progress` capability). Use each question's `domain:` and `task:` fields for this, never the `topic:` slug.
 - Generating new questions and choosing which domain to ground them in
 - Recommending what to study next based on weighted gap analysis
 
@@ -23,14 +23,14 @@ Richard reads this file when:
 
 ## Bank-slug → official-domain mapping
 
-The question bank's `topic:` field uses slugs that pre-date the syllabus. Each slug maps to one official domain. When in doubt, the **task statement** that the question tests is the tiebreaker (see `domains.md`).
+The question bank's `topic:` field uses slugs that pre-date the syllabus. The table below is only a rough guide. Every bank question now has its own `domain:` and `task:` fields. Those fields win whenever they disagree with this table.
 
 | Bank slug | Maps to | Notes / typical task statements |
 |---|---|---|
 | `agents-and-orchestration` | **D1** | T1.1 (loops), T1.2 (coordinator-subagent), T1.3 (Task tool, context passing), T1.4 (enforcement/handoff), T1.6 (decomposition) |
 | `agent-sdk` | **D1** | T1.1, T1.5 (hooks), T1.7 (sessions, fork). Conceptually a sub-slice of D1. |
 | `tool-use` | **D2** | T2.1 (descriptions), T2.3 (tool distribution, `tool_choice`), T2.5 (built-in tools). Could overlap with D4-T4.3 (`tool_use` for structured output) — disambiguate by question intent. |
-| `claude-code` | **D3** | T3.1–T3.6 (CLAUDE.md, slash commands/skills, rules, plan mode, iterative refinement, CI/CD) |
+| `claude-code` | **D3** (usually) | T3.1–T3.6 (CLAUDE.md, slash commands/skills, rules, plan mode, iterative refinement, CI/CD). Watch out: in q-001 to q-060 this slug is on session resume/fork questions (D1-T1.7) and built-in tool questions (D2-T2.5), not D3. |
 | `prompt-engineering` | **D4** | T4.1 (explicit criteria), T4.2 (few-shot), T4.3 (structured output via tool_use) |
 | `evaluation` | **D4** or **D5** | If about validation/retry loops, extraction quality → D4-T4.4. If about confidence calibration / human review routing → D5-T5.5. Read the question. |
 | `context-management` | **D5** | T5.1 (conversation context), T5.4 (codebase exploration, scratchpads), T5.6 (provenance) |
@@ -40,17 +40,18 @@ The question bank's `topic:` field uses slugs that pre-date the syllabus. Each s
 
 ### Current bank coverage vs exam weight
 
-Snapshot from the 85-question bank (q-001 to q-085):
+Counted from the `domain:` field of all 85 bank questions (q-001 to q-085):
 
-| Domain | Exam weight | Bank Q's | Coverage status |
-|---|---:|---:|---|
-| D1 | 27% | ~22 (`agents-and-orchestration` 21 + `agent-sdk` 1) | **Well-covered** |
-| D2 | 18% | 8 (`tool-use`) | Adequate |
-| D3 | 20% | ~19 (`claude-code` 18 + portion of `production-deployment`) | Adequate — 13 added in q-062 to q-084; T3.2 (skills) has the most |
-| D4 | 20% | ~15 (`prompt-engineering` 9 + `evaluation` ~4 + `pricing-and-limits` 2) | Well-covered |
-| D5 | 15% | ~21 (`context-management` 20 + portion of `production-deployment`/`safety-and-guardrails`) | Well-covered |
+| Domain | Exam weight | Bank Q's | Share of bank |
+|---|---:|---:|---:|
+| D1 | 27% | 20 | 24% |
+| D2 | 18% | 12 | 14% |
+| D3 | 20% | 13 | 15% |
+| D4 | 20% | 13 | 15% |
+| D5 | 15% | 27 | 32% |
 
-> Numbers are approximate where slugs map ambiguously. Richard should refine this on first read of each question.
+- D5 is over-covered. D2, D3 and D4 are a bit thin.
+- Thin task statements: T4.1 (explicit criteria in prompts) has **no** bank question. T1.1, T1.5, T2.3, T3.1, T3.3 and T4.6 have one each. Generate questions for these first.
 
 ### Subtopic field
 
@@ -72,6 +73,6 @@ When generating a question, Richard:
    - `task:` = the task statement code (e.g., `T2.3`)
 6. Writes the file to the per-user sanctum at `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/`, NOT to `assets/question-bank/`. The shared bank ships unchanged across all users.
 
-### Future evolution
+### Domain and task fields
 
-The original bank questions (q-001 to q-060) don't have `domain:` or `task:` fields; q-061 onward do. They can be added incrementally — Richard can backfill them on first encounter (read question → infer domain → write back). Or the repo owner can run a one-off pass with a script. Not urgent.
+All 85 bank questions have `domain:` and `task:` fields. q-001 to q-060 were tagged by reading what each question actually tests. Use these fields, not the slug, for every progress roll-up.

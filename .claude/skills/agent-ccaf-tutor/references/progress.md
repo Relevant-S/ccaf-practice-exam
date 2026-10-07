@@ -16,8 +16,14 @@ The wrong outcome: a vague reassurance ("you're making good progress!") or a sta
 
 Adapt to the user's question, but the spine is roughly:
 
-### 1. Headline read
-One sentence. Honest. *"You're on track for the 720 pass mark in three domains, behind in two. Tightest gap is D3 — 20% of the exam, only ~6 bank questions, currently at 40% accuracy."*
+### 1. Headline read, then a short menu
+Open with one honest sentence about the gap to the target (720, or the user's own target from `BOND.md`). *"Projected ~650, so about 70 points short of 720. The biggest gap is D3 (Claude Code, 20% of the exam) at 40%."*
+
+Then offer 2–4 next steps as a lettered menu, and wait for a pick:
+
+> A) 20-min tutoring on T3.3 (path-specific rules), then a 5-question quiz
+> B) 10-question mixed quiz, weighted to the exam
+> C) Full mock exam (see "Full mock exam" in `examination.md`)
 
 ### 2. Domain mastery, weighted
 
@@ -29,7 +35,9 @@ One sentence. Honest. *"You're on track for the 720 pass mark in three domains, 
 | D4 Prompt Engineering & Structured Output | 20% | Good | 70% | 3 days ago |
 | D5 Context Management & Reliability | 15% | Solid | 80% | 1 day ago |
 
-Pull the data from `TOPICS-MASTERY.md` × `QUESTION-HISTORY.md`. Use the official weights from `assets/syllabus/topics.md`. Mastery is your judgment call (Solid / Good / Wobbly / Weak / Untested), not just accuracy — factor in recency, depth of practical-task work, and whether they've defended their reasoning or just guessed correctly.
+Pull the data from `TOPICS-MASTERY.md` × `QUESTION-HISTORY.md`. Use the official weights from `assets/syllabus/topics.md`.
+
+**Count accuracy by the question's `domain:` and `task:` fields, never by its `topic:` slug.** Every bank question and every generated question carries these fields. The slugs mislead: for example, the `claude-code` slug on q-001 to q-060 mostly sits on session resume/fork (D1-T1.7) and built-in tool (D2-T2.5) questions. A learner once showed "100% on D3" from questions that were really D1. If a history row has no task code, look it up in the question file before counting it. Mastery is your judgment call (Solid / Good / Wobbly / Weak / Untested), not just accuracy — factor in recency, depth of practical-task work, and whether they've defended their reasoning or just guessed correctly.
 
 **Compute a projected exam score** as a weighted sum of domain accuracy. Be transparent that this is rough, since the bank doesn't perfectly mirror the real exam, but it's directionally useful. If they're tracking under 720, say so plainly.
 
@@ -39,7 +47,7 @@ From `MISCONCEPTIONS.md`, surface the top 1–3 patterns that have appeared more
 
 ### 4. Coverage gaps in the bank
 
-Flag any domain where the **shared question bank is depleting** (or never had enough). Especially D3 — the bank ships with ~6 questions for a 20% exam weight. Tell them how many bank questions remain in each domain (subtract `QUESTION-HISTORY.md` from `assets/question-bank/`), and how many Richard-generated questions are in their personal `generated-questions/` folder.
+Flag any domain where the **shared question bank is depleting** (or never had enough). Tell them how many bank questions remain in each domain (count bank files by their `domain:` field, then subtract the ones in `QUESTION-HISTORY.md`), and how many Richard-generated questions are in their personal `generated-questions/` folder. Current bank counts are in `assets/syllabus/topics.md` — do not quote numbers from memory.
 
 ### 5. Recommended next focus
 
@@ -79,11 +87,19 @@ Useful narrow views:
 - `PRACTICAL-TASKS.md` — depth indicator: a domain with completed practical tasks is more solid than one with just MCQ accuracy.
 - `BOND.md` — target exam date, weekly cadence. Frame recommendations against their actual timeline. *"You sit the exam in 3 weeks; that's enough to fix D3 if you put two sessions a week on it."*
 - `assets/syllabus/topics.md` and `domains.md` — the canonical domain weights and Task Statement reference.
-- `assets/question-bank/` (count files per topic) and `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/` (count there too) — for bank-depletion math.
+- `assets/question-bank/` (count files per `domain:` field, not per topic slug) and `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/` (count there too) — for bank-depletion math.
 
 **Write:**
 - The progress capability mostly *reads* memory and produces a report. But: if Richard notices `TOPICS-MASTERY.md` or `MISCONCEPTIONS.md` is stale or inconsistent (e.g., last 5 sessions not reflected), do a curation pass — update them. Note the curation in the session log.
 - Session log — short note that a progress check was run, and what the recommendation was.
+
+## Session Habits
+
+- **Open with the gap and a menu.** Every progress check starts with the one-line honest read and the A/B/C/D menu above.
+- **Record "unanswered", never assume.** If the user skips a question (for example, their exam date), write "unanswered" in `BOND.md`. Do not guess a value. You may ask once more in a later session.
+- **Stop after two declines.** If the user declines the same offer twice, stop offering it. Note this in `BOND.md` so the next session knows.
+- **Raise dated plans when the date passes.** If `BOND.md` holds a dated plan (switch quick → deep mode on a date, the exam date, a review date), check it against today. If the date has passed, say so and ask what to do.
+- **Propose a full mock when due.** If the last full mock exam is older than ~4 weeks, or there has never been one, offer one (see "Full mock exam" in `examination.md`).
 
 ## Proactive Suggestions (per CREED standing orders)
 

@@ -4,6 +4,8 @@ _Per-domain and per-Task-Statement read on what {user_name} knows. Updated after
 
 _Mastery levels: **Solid** | **Good** | **Wobbly** | **Weak** | **Untested**. Use judgment, not just accuracy: factor in recency, depth of practical-task work, and whether reasoning was defended or just guessed correctly._
 
+_Accuracy counts each question under its own `domain:` and `task:` fields, never its `topic:` slug. Keep every cell short: a Notes cell is a few words, not a sentence._
+
 _Last-touched is the date of the most recent session that engaged this topic, in any mode (tutoring, examination, or progress check)._
 
 ---
@@ -55,7 +57,7 @@ _Last-touched is the date of the most recent session that engaged this topic, in
 | T3.5 | Iterative refinement (examples, TDD, interview pattern) | Untested | |
 | T3.6 | Claude Code in CI/CD (`-p`, `--output-format json`) | Untested | |
 
-> **D3 bank coverage warning:** only ~6 shipped questions for a 20%-weight domain. Generated questions will need to fill the gap.
+> **D3 bank coverage:** 13 shipped questions for a 20%-weight domain (see `assets/syllabus/topics.md`). Generated questions fill the gap.
 
 ## D4 — Prompt Engineering & Structured Output (20%)
 
