@@ -199,7 +199,8 @@ details.case.flash { animation: flash 1.2s ease-out; }
     <div class="legend" aria-label="Legend">
       <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2"/></svg>Topic inside a topic</div>
       <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2" stroke-dasharray="3 5"/></svg>Case or scenario linked to it</div>
-      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-pie"></svg>Ring: read · cases · self-check</div>
+      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-pie"></svg>Ring fills as you go: read · cases · self-check</div>
+      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-done"></svg>Solid with ✓: done</div>
     </div>
   </div>
   <aside class="panel" id="panel" aria-live="polite"></aside>
@@ -776,16 +777,21 @@ function arcPath(r0, r1, a0, a1) {
   const [x2, y2] = polar(0, 0, r0, a1), [x3, y3] = polar(0, 0, r0, a0);
   return `M${x0} ${y0}A${r1} ${r1} 0 ${large} 1 ${x1} ${y1}L${x2} ${y2}A${r0} ${r0} 0 ${large} 0 ${x3} ${y3}Z`;
 }
+function isComplete(parts) { return !!parts && parts.every(v => v >= 0.999); }
 function drawRing(g, r, parts, color) {
   const r0 = r * 0.68, gap = 4;
-  const shades = [30, 62, 100];
+  if (isComplete(parts)) {
+    const ring = el("circle", { r: (r + r0) / 2, fill: "none" }, g);
+    ring.style.stroke = color; ring.style.strokeWidth = r - r0;
+    return;
+  }
   for (let i = 0; i < 3; i++) {
     const a0 = -90 + i * 120 + gap / 2, a1 = -90 + (i + 1) * 120 - gap / 2;
     el("path", { d: arcPath(r0, r, a0, a1), fill: "var(--track)" }, g);
     const v = Math.max(0, Math.min(1, parts[i]));
     if (v > 0.001) {
       const p = el("path", { d: arcPath(r0, r, a0, a0 + (a1 - a0) * v) }, g);
-      p.style.fill = `color-mix(in srgb, ${color} ${shades[i]}%, var(--surface))`;
+      p.style.fill = color;
     }
   }
 }
@@ -805,23 +811,24 @@ function paintNode(n) {
   const parts = partsFor(n);
   if (parts) {
     drawRing(g, r, parts, color);
+    const complete = n.kind !== "root" && isComplete(parts);
     const inner = el("circle", { r: r * 0.64 }, g);
-    inner.style.fill = n.kind === "root" ? "var(--ink)" : `color-mix(in srgb, ${color} 16%, var(--surface))`;
+    inner.style.fill = n.kind === "root" ? "var(--ink)" : complete ? color : `color-mix(in srgb, ${color} 16%, var(--surface))`;
     inner.style.stroke = n.kind === "root" ? "none" : color; inner.style.strokeWidth = "1.5";
     const t = el("text", { "text-anchor": "middle", dy: "0.35em", class: "code" }, g);
-    t.textContent = n.kind === "root" ? "CCAF" : n.kind === "domain" ? n.code : n.code;
-    t.style.fontSize = n.kind === "root" ? "17px" : n.kind === "domain" ? "15px" : "12px";
-    if (n.kind === "root") t.style.fill = "var(--bg)";
+    t.textContent = n.kind === "root" ? "CCAF" : complete ? "✓" : n.code;
+    t.style.fontSize = n.kind === "root" ? "17px" : complete ? (n.kind === "domain" ? "22px" : "17px") : n.kind === "domain" ? "15px" : "12px";
+    if (n.kind === "root" || complete) t.style.fill = "var(--bg)";
   } else {
     const c = el("circle", { r }, g);
     const done = n.kind === "case" && progress.cases[n.id];
-    c.style.fill = done ? `color-mix(in srgb, ${color} 55%, var(--surface))` : "var(--surface)";
+    c.style.fill = done ? color : "var(--surface)";
     c.style.stroke = color; c.style.strokeWidth = "2";
     c.style.strokeDasharray = n.kind === "scenario" ? "0" : "0";
     const t = el("text", { "text-anchor": "middle", dy: "0.35em", class: "code" }, g);
     t.textContent = n.kind === "scenario" ? "S" + n.n : "?";
     t.style.fontSize = "11px";
-    if (done) t.textContent = "✓";
+    if (done) { t.textContent = "✓"; t.style.fill = "var(--bg)"; t.style.fontSize = "13px"; }
   }
   const lab = el("text", { "text-anchor": "middle", class: "label", y: r + 17 }, g);
   lab.textContent = n.kind === "root" ? "The exam" : n.kind === "domain" ? n.short : n.kind === "task" ? `${n.step}. ${n.short}` : n.kind === "scenario" ? n.name : n.label;
@@ -1001,7 +1008,7 @@ function rootHtml() {
   <section><h3>How to use this map</h3><ul>
     <li>New to software development? Start with the <b>Basics</b> bubble at the top. It teaches the words the questions take for granted.</li>
     <li>Click a bubble to open it. Solid lines lead to the topics inside it. Dotted lines lead to scenarios and worked cases.</li>
-    <li>The ring around each bubble shows your progress in three parts: lesson read, cases worked through, self-check passed.</li>
+    <li>The ring around each bubble fills in three parts: lesson read, cases opened, self-check passed. When all three are done, the bubble turns solid with a ✓.</li>
     <li>Hover or tap any <span class="term" tabindex="0" data-g="distractor">dotted word</span> for a plain definition.</li>
     <li>When a topic feels clear, ask Richard, the tutor in this repo, to quiz you on it. Each lesson has a ready prompt.</li>
   </ul></section>
@@ -1252,7 +1259,12 @@ document.getElementById("placement").addEventListener("click", openOnboarding);
 panel.addEventListener("click", e => { if (e.target.closest("[data-onb]")) openOnboarding(); });
 
 /* ---------- Legend pie ---------- */
-(function () { const g = document.getElementById("legend-pie"); drawRing(g, 8.5, [1, 0.6, 0.3], "var(--d3)"); })();
+(function () {
+  drawRing(document.getElementById("legend-pie"), 8.5, [1, 0.6, 0.3], "var(--d3)");
+  const g = document.getElementById("legend-done");
+  drawRing(g, 8.5, [1, 1, 1], "var(--d3)");
+  const c = el("circle", { r: 5.6 }, g); c.style.fill = "var(--d3)";
+})();
 
 render();
 renderPanel();
