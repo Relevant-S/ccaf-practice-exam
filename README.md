@@ -1,6 +1,6 @@
 # CCAF Practice Exam — Richard the Tutor
 
-A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from a 60-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
+A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from an 85-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ docs/                               Project documentation
 references/                         Source PDFs (e.g., the official exam guide)
 ```
 
-The 60-question bank under `.claude/skills/agent-ccaf-tutor/assets/question-bank/` is shared by every install. Questions Richard generates for you are saved per-user under `_bmad/memory/ccaf-tutor/generated-questions/` and never shared.
+The 85-question bank under `.claude/skills/agent-ccaf-tutor/assets/question-bank/` is shared by every install. Questions Richard generates for you are saved per-user under `_bmad/memory/ccaf-tutor/generated-questions/` and never shared.
 
 ## Privacy
 

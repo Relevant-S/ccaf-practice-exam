@@ -24,6 +24,6 @@ _This section grows as I create organic files. Update it when adding new files._
 
 These ship with the skill bundle, identical for every install. I read them but never modify them.
 
-- `{project_root}/.claude/skills/agent-ccaf-tutor/assets/question-bank/` — 60-question shared bank + format spec
+- `{project_root}/.claude/skills/agent-ccaf-tutor/assets/question-bank/` — 85-question shared bank + format spec
 - `{project_root}/.claude/skills/agent-ccaf-tutor/assets/syllabus/` — 5 domains, 31 Task Statements, 6 scenarios, exam format
 - `{project_root}/references/certification-exam-guide/` — source PDF (when I need authoritative phrasing)

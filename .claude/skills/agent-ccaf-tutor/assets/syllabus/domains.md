@@ -209,7 +209,7 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 
 ## Domain 3 — Claude Code Configuration & Workflows (20%)
 
-> **Note:** the question bank is currently light on Domain 3 (only ~5 questions vs the 20% exam weight). Richard should generate supplemental Claude-Code questions and direct the learner to the official Claude Code docs at https://code.claude.com/docs/ for hands-on grounding.
+> **Note:** the original 60-question bank had only ~5 Domain 3 questions. 13 reviewed Domain 3 questions were added later (q-062 to q-084, tagged `domain: D3`), so the bank now has ~19 for this 20%-weight domain, covering T3.1–T3.6 (T3.2 skills has the most, T3.1 and T3.3 one each). Richard can still generate supplemental Claude-Code questions where a task statement is thin, and should direct the learner to the official Claude Code docs at https://code.claude.com/docs/ for hands-on grounding.
 
 ### T3.1 Configure CLAUDE.md files with appropriate hierarchy, scoping, modular organization
 
@@ -237,6 +237,7 @@ Each scenario is a recurring backdrop that Richard should use when generating ne
 - Project-scoped slash commands in `.claude/commands/` for team-wide availability.
 - `context: fork` for skills that produce verbose output (codebase analysis) or exploratory context (brainstorming).
 - `allowed-tools` to restrict tool access during skill execution (e.g., limit to file writes to prevent destructive actions).
+  > **Product drift (checked Oct 2026):** current Claude Code docs say `allowed-tools` *pre-approves* the listed tools (no permission prompt) and does **not** restrict others; restricting is `disallowed-tools`. For the exam, use the guide's meaning above. When tutoring, mention both.
 - `argument-hint` to prompt for required parameters when invoked without args.
 - Choosing between **skills** (on-demand, task-specific) and **CLAUDE.md** (always-loaded, universal standards).
 

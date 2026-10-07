@@ -40,15 +40,15 @@ The question bank's `topic:` field uses slugs that pre-date the syllabus. Each s
 
 ### Current bank coverage vs exam weight
 
-Snapshot from the 60-question bank:
+Snapshot from the 85-question bank (q-001 to q-085):
 
 | Domain | Exam weight | Bank Q's | Coverage status |
 |---|---:|---:|---|
-| D1 | 27% | ~21 (`agents-and-orchestration` 20 + `agent-sdk` 1) | **Well-covered** |
-| D2 | 18% | 7 (`tool-use`) | Adequate |
-| D3 | 20% | ~6 (`claude-code` 5 + portion of `production-deployment`) | **UNDER-covered — generate supplements** |
-| D4 | 20% | ~14 (`prompt-engineering` 8 + `evaluation` ~4 + `pricing-and-limits` 2) | Well-covered |
-| D5 | 15% | ~12 (`context-management` 11 + portion of `production-deployment`/`safety-and-guardrails`) | Well-covered |
+| D1 | 27% | ~22 (`agents-and-orchestration` 21 + `agent-sdk` 1) | **Well-covered** |
+| D2 | 18% | 8 (`tool-use`) | Adequate |
+| D3 | 20% | ~19 (`claude-code` 18 + portion of `production-deployment`) | Adequate — 13 added in q-062 to q-084; T3.2 (skills) has the most |
+| D4 | 20% | ~15 (`prompt-engineering` 9 + `evaluation` ~4 + `pricing-and-limits` 2) | Well-covered |
+| D5 | 15% | ~21 (`context-management` 20 + portion of `production-deployment`/`safety-and-guardrails`) | Well-covered |
 
 > Numbers are approximate where slugs map ambiguously. Richard should refine this on first read of each question.
 
@@ -67,11 +67,11 @@ When generating a question, Richard:
 3. Picks a **scenario** from the 6 in `domains.md` that fits naturally — exam questions are scenario-grounded.
 4. Writes the question following the bank's `README.md` format.
 5. **Tags the generated question** in frontmatter with both:
-   - `topic:` = the most natural bank slug (for backward compatibility with the existing 60 questions)
+   - `topic:` = the most natural bank slug (for backward compatibility with the existing bank questions)
    - `domain:` = the official domain code (`D1`–`D5`)
    - `task:` = the task statement code (e.g., `T2.3`)
 6. Writes the file to the per-user sanctum at `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/`, NOT to `assets/question-bank/`. The shared bank ships unchanged across all users.
 
 ### Future evolution
 
-Existing bank questions don't have `domain:` or `task:` fields. They can be added incrementally — Richard can backfill them on first encounter (read question → infer domain → write back). Or the repo owner can run a one-off pass with a script. Not urgent.
+The original bank questions (q-001 to q-060) don't have `domain:` or `task:` fields; q-061 onward do. They can be added incrementally — Richard can backfill them on first encounter (read question → infer domain → write back). Or the repo owner can run a one-off pass with a script. Not urgent.
