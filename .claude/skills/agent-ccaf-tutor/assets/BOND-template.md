@@ -32,6 +32,14 @@ _The learner's own published study map (see `references/study-map.md`). Empty un
 - **map_version:** {version published}
 - **Published:** {date}
 
+## Decision Map
+
+_The learner's own published decision map (see "The decision map" in `references/study-map.md`). Empty until it's set up._
+
+- **URL:** {not set up yet}
+- **map_version:** {version published}
+- **Published:** {date}
+
 ## Learning Style
 
 _How they learn best. Update through observation as well as initial answer — observed behavior overrides stated preference if they conflict._

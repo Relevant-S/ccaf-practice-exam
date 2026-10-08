@@ -68,6 +68,7 @@ Just describe what you want — *"quiz me on D3"*, *"teach me about hooks"*, *"h
 _bmad/                              BMad framework (config + supporting skills)
 _bmad/memory/ccaf-tutor/            YOUR personal sanctum (gitignored)
 study-map/                          Interactive study map for beginners (open in a browser)
+decision-map/                       Decision map: the exam's rules as yes/no charts (open in a browser)
 references/                         Source PDFs: the official exam guide (v1.0, July 2026, is current; v0.1 is kept for history)
 ```
 

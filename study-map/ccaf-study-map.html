@@ -181,12 +181,37 @@ details.case.flash { animation: flash 1.2s ease-out; }
   .legend { font-size: 0.72rem; }
 }
 @media (prefers-reduced-motion: reduce) { details.case.flash { animation: none; } }
+
+/* Switch between the study map and the decision map. */
+.mapswitch { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 2px; background: var(--bg); font-size: 0.85rem; }
+.mapswitch a, .mapswitch span { padding: 4px 12px; border-radius: 99px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.mapswitch a:hover { color: var(--ink); background: var(--track); }
+.mapswitch [aria-current="page"] { background: var(--ink); color: var(--bg); font-weight: 700; }
+
+/* Resizable panel: drag the handle on the panel's left edge (wide screens only). */
+.app { grid-template-columns: minmax(0, 1fr) clamp(300px, var(--panel-w, 440px), 75vw); }
+.panel-handle { position: absolute; top: 0; right: 0; bottom: 0; width: 12px; cursor: col-resize; z-index: 5; touch-action: none; }
+.panel-handle::after { content: ""; position: absolute; top: 50%; left: 6px; width: 4px; height: 48px; margin-top: -24px; border-radius: 4px; background: var(--line); transition: background .15s; }
+.panel-handle:hover::after, .panel-handle:focus-visible::after, .panel-handle.dragging::after { background: var(--focus); }
+.panel-handle:focus-visible { outline: none; }
+body.resizing, body.resizing * { cursor: col-resize !important; user-select: none !important; }
+.stage-handle { display: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto clamp(160px, var(--map-h, 56vh), 85vh) auto; }
+  .panel-handle { display: none; }
+  .stage-handle { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; cursor: row-resize; z-index: 5; touch-action: none; }
+  .stage-handle::after { content: ""; position: absolute; left: 50%; bottom: 6px; width: 56px; height: 5px; margin-left: -28px; border-radius: 5px; background: var(--line); transition: background .15s; }
+  .stage-handle:hover::after, .stage-handle:focus-visible::after, .stage-handle.dragging::after { background: var(--focus); }
+  .stage-handle:focus-visible { outline: none; }
+}
+body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select: none !important; }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="bar">
     <h1 class="brand">CCAF Study Map<small>Claude Certified Architect – Foundations</small></h1>
+    <nav class="mapswitch" aria-label="Switch map"><span aria-current="page">Study map</span><a id="to-decision" href="../decision-map/ccaf-decision-map.html">Decision map</a></nav>
     <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
     <div class="bar-tools">
       <button class="tool" id="placement" type="button">Placement</button>
@@ -1884,7 +1909,7 @@ const TRACKS = {
 
 /* ---------- State ---------- */
 // Bump when the page changes, so Richard knows to republish a learner's copy.
-const MAP_VERSION = "2026-10-08i";
+const MAP_VERSION = "2026-10-08l";
 const STORE_KEY = "ccaf-study-map-v1";
 let progress = { read: {}, cases: {}, checks: {}, profile: null, skipped: false };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
@@ -2658,6 +2683,61 @@ renderPanel();
   const connected = await Promise.race([connectStore(), new Promise(r => setTimeout(() => r(false), 4000))]);
   if (connected) { render(); renderPanel(); }
   if (!progress.profile && !progress.skipped) openOnboarding();
+})();
+
+/* ---------- Resizable panel ---------- */
+(function () {
+  const app = document.querySelector(".app"), stage = document.querySelector(".stage"), KEY = "ccaf-map-panel-width";
+  const h = document.createElement("div");
+  h.className = "panel-handle"; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "vertical");
+  h.setAttribute("aria-label", "Resize the panel. Drag, or use the left and right arrow keys. Double-click to reset.");
+  stage.appendChild(h);
+  const clamp = w => Math.max(300, Math.min(w, window.innerWidth * 0.75));
+  const refit = () => window.dispatchEvent(new Event("resize"));
+  function setW(w, store) {
+    if (w == null) app.style.removeProperty("--panel-w"); else app.style.setProperty("--panel-w", Math.round(clamp(w)) + "px");
+    if (store) { try { w == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, String(Math.round(clamp(w)))); } catch (e) {} }
+  }
+  try { const saved = +localStorage.getItem(KEY); if (saved) setW(saved, false); } catch (e) {}
+  let drag = null;
+  h.addEventListener("pointerdown", e => { drag = true; h.setPointerCapture(e.pointerId); h.classList.add("dragging"); document.body.classList.add("resizing"); e.preventDefault(); });
+  h.addEventListener("pointermove", e => { if (drag) setW(window.innerWidth - e.clientX, false); });
+  function end() { if (!drag) return; drag = null; h.classList.remove("dragging"); document.body.classList.remove("resizing"); setW(document.querySelector(".panel").getBoundingClientRect().width, true); refit(); }
+  h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  h.addEventListener("dblclick", () => { setW(null, true); refit(); });
+  h.addEventListener("keydown", e => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const cur = document.querySelector(".panel").getBoundingClientRect().width;
+    setW(cur + (e.key === "ArrowLeft" ? 32 : -32), true); refit();
+  });
+})();
+
+/* ---------- Resizable map height (narrow layout: map on top, panel below) ---------- */
+(function () {
+  const app = document.querySelector(".app"), stage = document.querySelector(".stage"), KEY = "ccaf-map-height";
+  const h = document.createElement("div");
+  h.className = "stage-handle"; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "horizontal");
+  h.setAttribute("aria-label", "Resize the map. Drag, or use the up and down arrow keys. Double-click to reset.");
+  stage.appendChild(h);
+  const clamp = v => Math.max(160, Math.min(v, window.innerHeight * 0.85));
+  const refit = () => window.dispatchEvent(new Event("resize"));
+  function setH(v, store) {
+    if (v == null) app.style.removeProperty("--map-h"); else app.style.setProperty("--map-h", Math.round(clamp(v)) + "px");
+    if (store) { try { v == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, String(Math.round(clamp(v)))); } catch (e) {} }
+  }
+  try { const saved = +localStorage.getItem(KEY); if (saved) setH(saved, false); } catch (e) {}
+  let drag = false;
+  h.addEventListener("pointerdown", e => { drag = true; h.setPointerCapture(e.pointerId); h.classList.add("dragging"); document.body.classList.add("resizing-v"); e.preventDefault(); });
+  h.addEventListener("pointermove", e => { if (drag) setH(e.clientY - stage.getBoundingClientRect().top, false); });
+  function end() { if (!drag) return; drag = false; h.classList.remove("dragging"); document.body.classList.remove("resizing-v"); setH(stage.getBoundingClientRect().height, true); refit(); }
+  h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  h.addEventListener("dblclick", () => { setH(null, true); refit(); });
+  h.addEventListener("keydown", e => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    setH(stage.getBoundingClientRect().height + (e.key === "ArrowDown" ? 32 : -32), true); refit();
+  });
 })();
 </script>
 </body>

@@ -1,0 +1,1152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CCAF Decision Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a pannable bubble map on the left, the lesson panel on the right; stacked on phones. */
+:root {
+  --bg: #f3f2ee;
+  --surface: #fbfaf7;
+  --ink: #1d2230;
+  --ink-soft: #545b6b;
+  --line: #c9c6bd;
+  --track: #e2dfd7;
+  --focus: #2b5bd7;
+  --good: #2f7d4f;
+  --bad: #b23a3a;
+  --d1: #4b5bd6; --d2: #148a8a; --d3: #c27a12; --d4: #9a3f8f; --d5: #3d7f2e; --b0: #4f6d8a;
+  --scen: #6b7280;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171f; --surface: #1b1f29; --ink: #e8e9ee; --ink-soft: #a3a9b8;
+    --line: #3a4050; --track: #2a2f3b; --focus: #7aa2ff; --good: #5fc287; --bad: #ef7b7b;
+    --d1: #8c97ff; --d2: #3fc4c4; --d3: #f0a83a; --d4: #d27fc8; --d5: #7cc46a; --scen: #9aa1ad; --b0: #8fb3d6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171f; --surface: #1b1f29; --ink: #e8e9ee; --ink-soft: #a3a9b8;
+  --line: #3a4050; --track: #2a2f3b; --focus: #7aa2ff; --good: #5fc287; --bad: #ef7b7b;
+  --d1: #8c97ff; --d2: #3fc4c4; --d3: #f0a83a; --d4: #d27fc8; --d5: #7cc46a; --scen: #9aa1ad; --b0: #8fb3d6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--font-body); }
+button { font: inherit; color: inherit; }
+a { color: var(--focus); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+header.bar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.brand { font: 700 1.25rem/1.1 var(--font-display); letter-spacing: -0.01em; margin: 0; }
+.brand small { display: block; font: 400 0.78rem/1.3 var(--font-body); color: var(--ink-soft); letter-spacing: 0; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 0.9rem; min-width: 0; }
+.crumbs button { background: none; border: 0; padding: 2px 6px; border-radius: 6px; cursor: pointer; color: var(--ink-soft); }
+.crumbs button:hover { background: var(--track); color: var(--ink); }
+.crumbs button[aria-current="true"] { color: var(--ink); font-weight: 700; }
+.crumbs span { color: var(--line); }
+.bar-tools { margin-left: auto; display: flex; gap: 8px; }
+.tool { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 4px 10px; font-size: 0.85rem; cursor: pointer; }
+.tool:hover { border-color: var(--ink-soft); }
+
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+#map { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+#map.dragging { cursor: grabbing; }
+.legend { position: absolute; left: 12px; bottom: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 0.78rem; display: grid; gap: 4px; max-width: calc(100% - 24px); }
+.legend .row { display: flex; align-items: center; gap: 8px; }
+.legend svg { flex: none; }
+
+.node { cursor: pointer; }
+.node text { font-family: var(--font-body); fill: var(--ink); pointer-events: none; }
+.node .label { font-size: 13px; font-weight: 700; }
+.node .sub { font-size: 11px; fill: var(--ink-soft); }
+.node .code { font-family: var(--font-mono); font-weight: 600; }
+.node.dim { opacity: 0.45; }
+.node .halo { fill: none; stroke: var(--focus); stroke-width: 3; opacity: 0; }
+.node.is-focus .halo { opacity: 1; }
+.node:focus-visible { outline: none; }
+.node:focus-visible .halo { opacity: 1; stroke-dasharray: 4 3; }
+.edge { fill: none; stroke: var(--line); stroke-width: 2; }
+.edge.related { stroke-dasharray: 3 5; stroke-width: 1.6; }
+
+aside.panel { border-left: 1px solid var(--line); background: var(--surface); overflow-y: auto; min-height: 0; }
+.panel-inner { padding: 22px 24px 48px; display: grid; gap: 22px; }
+.eyebrow { font: 600 0.72rem/1.2 var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); display: flex; gap: 10px; flex-wrap: wrap; }
+.eyebrow .chip { padding: 2px 8px; border-radius: 99px; background: var(--track); color: var(--ink); }
+.panel h2 { font: 700 1.6rem/1.15 var(--font-display); margin: 6px 0 0; text-wrap: balance; letter-spacing: -0.01em; }
+.panel h3 { font: 700 1.02rem/1.3 var(--font-display); margin: 0 0 8px; }
+.panel p { margin: 0 0 10px; max-width: 62ch; }
+.panel ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.panel section { display: grid; gap: 4px; }
+code { font: 0.86em var(--font-mono); background: var(--track); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+pre { font: 0.82rem/1.5 var(--font-mono); background: var(--track); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0 0; }
+.drift { border-left: 3px solid var(--d3); background: color-mix(in srgb, var(--d3) 10%, var(--surface)); padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 0.92rem; }
+.drift b { display: block; font-family: var(--font-display); }
+.weights { display: grid; gap: 6px; }
+.weights button { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) 3em; align-items: center; gap: 8px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.weights .bar { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; }
+.weights .bar i { display: block; height: 100%; }
+.weights .pct { font: 0.85rem var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+details.case { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+details.case + details.case { margin-top: 8px; }
+details.case summary { cursor: pointer; padding: 10px 12px; list-style: none; display: flex; gap: 10px; align-items: baseline; }
+details.case summary::-webkit-details-marker { display: none; }
+details.case summary::before { content: "+"; font: 700 1rem var(--font-mono); color: var(--ink-soft); width: 1ch; }
+details.case[open] summary::before { content: "−"; }
+details.case .scen { font: 0.72rem var(--font-mono); color: var(--ink-soft); margin-left: auto; white-space: nowrap; }
+details.case .body { padding: 0 14px 12px 32px; display: grid; gap: 8px; }
+.step { display: grid; grid-template-columns: 6.6em minmax(0, 1fr); gap: 8px; font-size: 0.95rem; }
+.step b { font: 600 0.72rem/1.9 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.step.wrong b { color: var(--bad); }
+.step.right b { color: var(--good); }
+details.case.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { box-shadow: 0 0 0 4px var(--focus); } to { box-shadow: 0 0 0 0 transparent; } }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 700; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 400; }
+.btn[aria-pressed="true"] { background: var(--good); border-color: var(--good); color: #fff; }
+.note { font-size: 0.85rem; color: var(--ink-soft); }
+.copybox { font: 0.82rem var(--font-mono); width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--bg); color: var(--ink); resize: none; }
+.tasklist { display: grid; gap: 6px; }
+.tasklist button { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 10px; text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.tasklist button:hover { border-color: var(--ink-soft); }
+.tasklist .n { font: 600 0.75rem/1.6 var(--font-mono); color: var(--ink-soft); }
+
+.term { border-bottom: 1.5px dotted var(--ink-soft); cursor: help; }
+#tip { position: fixed; z-index: 10; max-width: 290px; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; line-height: 1.4; pointer-events: none; }
+#tip b { display: block; }
+
+.plain { background: color-mix(in srgb, var(--b0) 12%, var(--surface)); border-radius: 10px; padding: 10px 12px; font-size: 1rem; }
+.plain b { font-family: var(--font-display); margin-right: 6px; }
+.bridge { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; }
+.bridge b { display: block; font-family: var(--font-display); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 3px 10px; font-size: 0.85rem; cursor: pointer; }
+.chips button:hover { border-color: var(--ink-soft); }
+.chips button.done { border-color: var(--good); }
+.chips button.done::after { content: " ✓"; color: var(--good); }
+.path { display: grid; gap: 4px; counter-reset: p; }
+.path button { display: grid; grid-template-columns: 1.8em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--track); padding: 6px 0; cursor: pointer; }
+.path button::before { counter-increment: p; content: counter(p); font: 600 0.8rem var(--font-mono); color: var(--ink-soft); }
+.path button .st { font-size: 0.78rem; color: var(--ink-soft); }
+.path button.done .st { color: var(--good); }
+.path button.next { font-weight: 700; }
+.path button.next .st { color: var(--focus); }
+.pin rect { fill: var(--focus); }
+.pin text { fill: #fff !important; font: 700 10px var(--font-body); letter-spacing: 0.06em; }
+
+.onb { position: fixed; inset: 0; z-index: 20; background: color-mix(in srgb, var(--ink) 45%, transparent); display: grid; place-items: center; padding: 16px; }
+.onb-card { width: min(620px, 100%); max-height: calc(100% - 8px); overflow-y: auto; background: var(--surface); border-radius: 16px; padding: 24px; display: grid; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.onb-card h2 { font: 700 1.5rem/1.2 var(--font-display); margin: 0; text-wrap: balance; }
+.onb-card p { margin: 0; }
+.onb-steps { font: 600 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.choices { display: grid; gap: 8px; }
+.choices button, .choices label { display: flex; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.choices button:hover, .choices label:hover { border-color: var(--ink-soft); }
+.choices input { width: 18px; height: 18px; accent-color: var(--focus); }
+.choices button.unsure { color: var(--ink-soft); font-style: italic; }
+.onb-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--focus); text-decoration: underline; cursor: pointer; font-size: 0.9rem; }
+.track { display: inline-block; font: 700 0.8rem var(--font-mono); padding: 3px 10px; border-radius: 99px; background: var(--ink); color: var(--bg); }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 56vh auto; height: auto; }
+  aside.panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .panel-inner { padding: 20px 16px 48px; }
+  header.bar { padding: 10px 16px; }
+  .bar-tools { margin-left: 0; }
+  .legend { font-size: 0.72rem; }
+}
+@media (prefers-reduced-motion: reduce) { details.case.flash { animation: none; } }
+
+/* Switch between the study map and the decision map. */
+.mapswitch { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 2px; background: var(--bg); font-size: 0.85rem; }
+.mapswitch a, .mapswitch span { padding: 4px 12px; border-radius: 99px; text-decoration: none; color: var(--ink-soft); white-space: nowrap; }
+.mapswitch a:hover { color: var(--ink); background: var(--track); }
+.mapswitch [aria-current="page"] { background: var(--ink); color: var(--bg); font-weight: 700; }
+
+/* Resizable panel: drag the handle on the panel's left edge (wide screens only). */
+.app { grid-template-columns: minmax(0, 1fr) clamp(300px, var(--panel-w, 440px), 75vw); }
+.panel-handle { position: absolute; top: 0; right: 0; bottom: 0; width: 12px; cursor: col-resize; z-index: 5; touch-action: none; }
+.panel-handle::after { content: ""; position: absolute; top: 50%; left: 6px; width: 4px; height: 48px; margin-top: -24px; border-radius: 4px; background: var(--line); transition: background .15s; }
+.panel-handle:hover::after, .panel-handle:focus-visible::after, .panel-handle.dragging::after { background: var(--focus); }
+.panel-handle:focus-visible { outline: none; }
+body.resizing, body.resizing * { cursor: col-resize !important; user-select: none !important; }
+.stage-handle { display: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto clamp(160px, var(--map-h, 56vh), 85vh) auto; }
+  .panel-handle { display: none; }
+  .stage-handle { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; cursor: row-resize; z-index: 5; touch-action: none; }
+  .stage-handle::after { content: ""; position: absolute; left: 50%; bottom: 6px; width: 56px; height: 5px; margin-left: -28px; border-radius: 5px; background: var(--line); transition: background .15s; }
+  .stage-handle:hover::after, .stage-handle:focus-visible::after, .stage-handle.dragging::after { background: var(--focus); }
+  .stage-handle:focus-visible { outline: none; }
+}
+body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select: none !important; }
+</style>
+<style>
+/* Decision map: one flowchart on the left, details on the right. */
+.router { display: grid; gap: 6px; }
+.router button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline; text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.router button:hover { border-color: var(--ink-soft); }
+.router .to { font: 600 0.8rem var(--font-mono); white-space: nowrap; }
+.outcome { border-left: 4px solid var(--c); background: color-mix(in srgb, var(--c) 9%, var(--surface)); border-radius: 0 10px 10px 0; padding: 10px 12px; display: grid; gap: 6px; }
+.outcome .answer { font-weight: 700; margin: 0; }
+.outcome .why { margin: 0; font-size: 0.93rem; color: var(--ink-soft); }
+ul.examples { list-style: none; padding: 0; display: grid; gap: 8px; }
+ul.examples li { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); font-style: italic; }
+.panel h2 .term { font-style: normal; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table.flags { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 0.88rem; }
+table.flags th, table.flags td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--track); }
+table.flags th { font: 600 0.72rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); background: var(--bg); }
+table.flags td:first-child { font-weight: 700; }
+.chips.quiet { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips.quiet span { border: 1px dashed var(--line); border-radius: 99px; padding: 3px 10px; font-size: 0.85rem; color: var(--ink-soft); }
+.tasklist button span:last-child { min-width: 0; }
+.fnode { cursor: pointer; }
+.fnode:focus { outline: none; }
+.fnode:focus-visible rect, .fnode:focus-visible path { stroke-dasharray: 5 3; stroke-width: 3; }
+.fnode:hover rect, .fnode:hover path { filter: brightness(0.97); }
+.flow .fedge { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.flow .fhead { font: 700 16px var(--font-display); }
+.flow .fhead2 { font: 700 11.5px var(--font-mono); letter-spacing: 0.06em; }
+.flow .flabel { font: 700 12.5px/1.3 var(--font-body); }
+.flow .ftext { font: 12.5px/1.3 var(--font-body); }
+.flow .fq { font: 700 10.5px var(--font-mono); letter-spacing: 0.06em; }
+.flow .fyes { font: 700 11px var(--font-mono); fill: var(--ink-soft); }
+#legend-flow { left: auto; right: 12px; }
+@media (max-width: 860px) { #legend-flow { display: none; } }
+</style>
+<div class="app">
+  <header class="bar">
+    <h1 class="brand">CCAF Decision Map<small>Find the rule a question is testing</small></h1>
+    <nav class="mapswitch" aria-label="Switch map"><a id="to-study" href="../study-map/ccaf-study-map.html">Study map</a><span aria-current="page">Decision map</span></nav>
+    <nav class="crumbs" id="crumbs" aria-label="Where you are"></nav>
+    <div class="bar-tools">
+      <button class="tool" id="flagsbtn" type="button">Red flags</button>
+      <button class="tool" id="home" type="button">Start</button>
+      <button class="tool" id="fit" type="button">Whole map</button>
+    </div>
+  </header>
+  <div class="stage">
+    <svg id="map" role="img" aria-label="Decision flowchart: a new exam question goes through five reading steps to the question “What is it about?”, which branches into twelve situations. Each situation asks its questions in order; Yes leads down to the answer, No leads right to the next question, ending in a default."></svg>
+  </div>
+  <aside class="panel" id="panel" aria-live="polite"></aside>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/* ---------- Glossary: plain definitions shown on hover or tap ---------- */
+const GLOSSARY = {
+  "hook": ["Hook", "Your own code that runs automatically at a fixed moment, for example just before a tool runs. It can block an action, so it gives a guarantee a prompt cannot."],
+  "pretooluse": ["PreToolUse", "A hook that runs just before a tool runs. It can deny the call, so the action never happens."],
+  "posttooluse": ["PostToolUse", "A hook that runs just after a tool has run. It can reshape the result before Claude sees it, but cannot undo the call."],
+  "subagent": ["Subagent", "A helper Claude session with its own task and its own context. It returns only its result to the coordinator."],
+  "coordinator": ["Coordinator", "The lead agent in a multi-agent system. It splits the job, hands parts to subagents and combines their results."],
+  "stop_reason": ["stop_reason", "A field on every Claude reply that says why it stopped. \"tool_use\" means it wants a tool run; \"end_turn\" means it is finished."],
+  "context": ["Context window", "Everything Claude can see right now: instructions, the conversation, tool results. It has a size limit, so clutter pushes out useful detail."],
+  "fork_session": ["fork_session", "An option when resuming a session: it makes a copy that continues on its own path, while the original stays unchanged."],
+  "tool_choice": ["tool_choice", "A request setting: auto (model decides), any (must call some tool), a named tool (must call that one), or none."],
+  "iserror": ["isError", "A flag on an MCP tool result. true means the tool ran but failed; the content says why."],
+  "claude.md": ["CLAUDE.md", "A Markdown file of instructions Claude Code reads at the start of a session. Where it is saved decides who gets it."],
+  "custom_id": ["custom_id", "Your own label on each request in a batch. Results can come back in any order, so you match them by this id."],
+  "few-shot": ["Few-shot examples", "A few worked examples in the prompt (input and the exact output you want), so the model copies the pattern."],
+  "escalation": ["Escalation", "Handing a case from the agent to a human."],
+  "handoff": ["Handoff", "What the agent passes to the human: a short structured summary, because the human cannot see the transcript."],
+  "gate": ["Deterministic gate", "A check in code that always runs, so the action cannot happen until the condition is met."],
+  "prerequisite": ["Prerequisite", "A step that must succeed first. Code blocks the next tool until it has, for example no refund until the customer's ID is verified."],
+  "fork": ["context: fork", "A skill setting. The skill runs in its own separate subagent, and only its short summary comes back to the main conversation."],
+  "allowed-tools": ["allowed-tools", "A skill setting that lists the tools the skill may use. The exam guide treats it as a limit on the skill's tools."],
+  "plan mode": ["Plan mode", "A Claude Code mode where Claude looks around and proposes a plan without changing files. You approve the plan, then it acts."],
+  "sla": ["SLA", "A deadline promised to a customer, for example “results within 30 hours”."],
+  "ci": ["CI", "Automated checks that run on every code change, with nobody at a keyboard to answer questions."],
+  ".mcp.json": [".mcp.json", "A file in the project that lists the MCP servers. Committed to the repo, so everyone who clones it gets the same servers."],
+  "case facts": ["Case-facts block", "A short structured list of exact facts (order IDs, amounts, dates, statuses). It is sent with every prompt, outside any summary, so the facts never blur."]
+};
+
+/* ---------- Plain names for the domain and task codes ---------- */
+const DOMAINS = { d1: "Agentic architecture", d2: "Tools & MCP", d3: "Claude Code setup", d4: "Prompts & output", d5: "Context & reliability" };
+const TASKS = {
+  "1.1": "agent loops", "1.2": "coordinator and subagents", "1.3": "passing context to subagents", "1.4": "enforced workflows and handoffs",
+  "1.5": "hooks", "1.6": "splitting up the work", "1.7": "sessions: resume and fork",
+  "2.1": "tool descriptions", "2.2": "tool errors", "2.3": "which agent gets which tools", "2.4": "connecting MCP servers", "2.5": "built-in tools",
+  "3.1": "CLAUDE.md levels", "3.2": "commands and skills", "3.3": "path-specific rules", "3.4": "plan mode or act directly", "3.5": "refining step by step", "3.6": "CI pipelines",
+  "4.1": "explicit criteria", "4.2": "few-shot examples", "4.3": "structured output", "4.4": "validation and retries", "4.5": "batch processing", "4.6": "independent review",
+  "5.1": "key facts in long chats", "5.2": "escalation", "5.3": "errors across agents", "5.4": "exploring big codebases", "5.5": "human review and confidence", "5.6": "sources and conflicts"
+};
+function taskSpans(s) {
+  return String(s || "").split("·").map(x => x.trim().replace(/^T/, "")).filter(Boolean)
+    .map(n => `<span>T${n} ${TASKS[n] || ""}</span>`).join("");
+}
+
+/* ---------- Exam-day routine and router ---------- */
+const ROUTINE = [
+  ["Read the ask first", "The last line: “most effective”, “first step”, “most reliably”. What decision is being made?"],
+  ["Name the rule", "Use the router below and say it in one phrase: “hard gate”, “fork for output volume” (a skill set to run on its own so its output stays out of the main chat), “keep the exact facts”."],
+  ["Name the fact the rule needs", "Output volume? Is the threshold known? Did they ask for a human? Is the data in the input?"],
+  ["Find that fact", "Wherever it sits in the scenario. Not the last number, and not the one the framing makes loud."],
+  ["Remove red flags, then choose", "Of two survivors, pick the one that fits this scenario without extra machinery. For “choose N”, judge each option true or false on its own, then check the count."]
+];
+const ROUTER = [
+  ["How should the agent choose, route, plan or split the work?", "judge"],
+  ["When does the agent loop continue or stop?", "loop"],
+  ["This must never happen / no exceptions / compliance", "judge"],
+  ["Context is filling up / long session / customer comes back", "context"],
+  ["Frustrated customer / wants a person / policy is silent", "esc"],
+  ["A subagent can't see something, isn't spawned or failed", "sub"],
+  ["Wrong tool picked / tool error / tool order / MCP setup", "tools"],
+  ["Where should this instruction live?", "where"],
+  ["Guaranteed / block before / clean the result", "hooks"],
+  ["Skill output, plan mode, steering Claude, CI (automated checks on each code change)", "config"],
+  ["Output invented, inconsistent or the wrong shape", "output"],
+  ["Batch or real time / SLA (a promised deadline) / failed batch items", "batch"],
+  ["Human reviewers, confidence, sources, big codebases", "rel"]
+];
+const NOT_ON_EXAM = ["Fine-tuning", "Auth, billing, API keys, OAuth", "Hosting MCP servers", "Model internals, RLHF", "Vector database internals", "Computer use", "Vision", "Streaming / SSE", "Rate limits and pricing maths", "Cloud provider setup", "Benchmarks", "Prompt caching details", "Tokenization"];
+
+/* ---------- The decision charts ----------
+   Walk the steps in order. The first Yes is the answer; if none fires, the default applies. */
+const CHARTS = [
+  {
+    id: "judge", short: "Structure or model", dom: "d1", tasks: "1.2 · 1.4 · 1.5 · 1.6",
+    name: "Should structure decide, or the model?",
+    start: "A design choice about deciding, routing or enforcing.",
+    steps: [
+      { id: "q1", short: "Must never fail", q: "Is the rule known today, and is even one miss unacceptable? Money limits, identity checks before payments, “no exceptions, ever”.",
+        a: "A {{gate|deterministic gate}} in code: a {{pretooluse|PreToolUse}} {{hook|hook}} that blocks the outgoing call, or a {{prerequisite|prerequisite}} that blocks process_refund until get_customer returns a verified ID.",
+        why: "A prompt persuades; a hook guarantees. Match the mechanism to the stakes: a recoverable best practice (for example “back up before overwriting” in a version-controlled repo) can stay a prompt. Not every guideline needs a hook.", tags: "T1.4 · T1.5" },
+      { id: "q2", short: "Known volume", q: "Is the work known, complete and independent? The same checklist over 200 contracts, the same extraction on 500 invoices.",
+        a: "Fan out to parallel {{subagent|subagents}}, then combine the results. If the known steps depend on each other (collect → analyse → report), use a fixed pipeline where each output feeds the next.",
+        why: "There is nothing to discover about what to do, only volume to get through.", tags: "T1.2 · T1.6" },
+      { id: "q3", short: "Path unknown", q: "Does the path depend on what each step reveals? An unknown bug, mixed tickets, a query mix that keeps changing.",
+        a: "Adaptive: the model decides at runtime under explicit criteria. Give it a goal, a “done” bar and escalation triggers, and let each finding pick the next step. A {{coordinator|coordinator}} reads each query and chooses which subagents it needs.",
+        why: "The information needed to plan does not exist until the real request arrives.", tags: "T1.6 · T1.2" },
+      { id: "q4", short: "Mixed request", q: "Does one request mix several concerns? “Double-charged, the app crashes, and cancel one subscription.”",
+        a: "Split it into separate items, investigate each in parallel with the shared customer context, then give one combined answer.",
+        why: "Each issue gets its own investigation; the customer still gets one clear reply.", tags: "T1.4" }
+    ],
+    fallback: { short: "Default", a: "Explicit escalation criteria in the system prompt, with a few examples of when to escalate and when to resolve. For example: “escalate if data loss is reported, if confidence is low after two attempts, or if you need access you don't have.”", tags: "T1.4" },
+    traps: [
+      "Train a classifier for routing: it needs labels and retraining, and breaks as queries drift.",
+      "Pattern-based routing by query shape: it hardens while the traffic changes.",
+      "A hard-coded fast path (keyword rules) that sends “simple” queries around the pipeline: structure deciding for the model. The coordinator itself choosing to skip subagents is fine.",
+      "“Build a comprehensive plan first” for an unknown problem: the plan is a guess.",
+      "“NEVER…” in the system prompt for a hard compliance rule: still a failure rate above zero.",
+      "Few-shot examples for a must-never-fail threshold: still probabilistic."
+    ],
+    test: "Does this option move the decision to build time, before the information exists? Then prefer runtime judgment, unless the rule is a must-never-fail one.",
+  },
+  {
+    id: "loop", short: "Agent loop", dom: "d1", tasks: "1.1",
+    name: "The agent loop: continue or stop?",
+    start: "A reply has come back from Claude inside an agent loop.",
+    steps: [
+      { id: "q1", short: "tool_use", q: "Does {{stop_reason}} say \"tool_use\"?",
+        a: "Run the requested tool, append the result to the conversation, and call Claude again.",
+        why: "The model picks the next step from the results in its context. That is model-driven, not a pre-set tool sequence. A reply can hold text and a tool call at the same time.", tags: "T1.1" },
+      { id: "q2", short: "end_turn", q: "Does stop_reason say \"end_turn\"?",
+        a: "Stop the loop. The task is finished.", why: "\"end_turn\" is the built-in signal that Claude is done.", tags: "T1.1" }
+    ],
+    fallback: { short: "Never", a: "Never decide by reading the text. Phrases like “I'm done”, a reply that merely contains text, or a fixed number of rounds are not stop signals. A high iteration cap is fine as a safety net, not as the main stop.", tags: "T1.1" },
+    traps: [
+      "Parsing the text for “task complete”: wording varies; it is not a protocol signal.",
+      "A fixed iteration cap as the main stop: it cuts work off or wastes turns.",
+      "“It returned text, so it's finished”: one response can hold text and a tool call."
+    ],
+  },
+  {
+    id: "sub", short: "Subagents", dom: "d1", tasks: "1.2 · 1.3 · 5.3 · 5.4",
+    name: "Subagents: spawning, what they see, when they fail",
+    start: "A coordinator and subagent question.",
+    steps: [
+      { id: "q1", short: "Can't spawn", q: "The coordinator cannot spawn subagents at all?",
+        a: "Put the Task tool in its allowedTools.", why: "Listing subagent types in the system prompt does not enable spawning. Product drift: the exam guide calls it the Task tool. In Claude Code 2.1.63 it was renamed Agent; Task still works.", tags: "T1.3" },
+      { id: "q2", short: "Missing findings", q: "A subagent's output misses what other agents found?",
+        a: "The coordinator must put those findings in the subagent's prompt. Subagents inherit nothing.", why: "Running them one after another does not pass data either. Giving it tools to read other agents' histories is the wrong fix.", tags: "T1.3" },
+      { id: "q3", short: "Keep sources", q: "Must claim-to-source links or dates survive to the final report?",
+        a: "Subagents return structured content with separate source metadata, carried through synthesis.", why: "Sources rebuilt afterwards are guesses.", tags: "T1.3 · T5.6" },
+      { id: "q4", short: "Subagent fails", q: "A subagent fails or times out?",
+        a: "It returns a structured error: what failed, what it tried, whether a retry could help, and any partial results. The coordinator retries, works around it, or continues with partial results and marks the gap in the output.",
+        why: "Errors are data that flow up. Retry short-lived failures locally first, and pass up only what it can't fix. Say whether the source failed or simply had no matches. Never return an empty result as a success. Halting the whole run on one failed source is the anti-pattern.", tags: "T5.3" },
+      { id: "q5", short: "Trivial follow-up", q: "Is it a trivial follow-up the coordinator can answer itself?",
+        a: "Answer directly.", why: "Spawning costs context, time and coordination.", tags: "T1.2" },
+      { id: "q6", short: "Named question", q: "Can you name the specific question a subagent would answer?",
+        a: "Spawn a scoped subagent for that question, with a summary of what is known so far in its prompt.", why: "Specific questions keep the noisy reading out of the main context.", tags: "T5.4" },
+      { id: "q7", short: "Crash resume", q: "The pipeline crashed mid-run and must resume without redoing work?",
+        a: "Each agent exports its state to a known location. On resume, the coordinator loads the manifest and puts the relevant state into each agent's prompt.",
+        why: "Not separate state files each agent reloads on its own, not a shared vector store, and not resuming the coordinator's old session.", tags: "T5.4 · T1.3" },
+      { id: "q8", short: "Whole areas missing", q: "Every subagent succeeded, but the final report misses whole areas of the topic?",
+        a: "Check the coordinator's split first: it was too narrow. Give each subagent a distinct subtopic, and let the coordinator send follow-up work when synthesis shows gaps.",
+        why: "Don't blame the downstream agents. They did exactly what they were given.", tags: "T1.2" }
+    ],
+    fallback: { short: "Don't fan out", a: "Don't split by folder or file count. Grep for the entry points, follow imports, and widen only as the trail leads.", tags: "T5.4" },
+    traps: [
+      "Subagents spawning subagents in a recursive queue: the coordinator loses track of what is running.",
+      "Giving every agent every tool: a synthesis agent with web search starts searching. Scope tools to the role.",
+      "A generic “some searches failed”: too thin for the coordinator to act on.",
+      "One crash stops the whole run, or the coordinator drops it without noting the gap."
+    ],
+  },
+  {
+    id: "hooks", short: "Hooks", dom: "d1", tasks: "1.5 · 3.1",
+    name: "Hooks and guarantees",
+    start: "Something must be guaranteed or cleaned up.",
+    steps: [
+      { id: "q1", short: "Stop before", q: "Must an action be stopped before it happens? A refund over $500, a transfer without an anti-money-laundering check, a push to main.",
+        a: "A {{pretooluse|PreToolUse}} hook: it reads the outgoing call and returns deny (with a reason and a redirect, such as escalation to a human), allow, or a rewritten input.",
+        why: "Like a manager who signs off before the action.", tags: "T1.5" },
+      { id: "q2", short: "Clean after", q: "Must a result be cleaned up before Claude reads it (mixed date formats, card numbers), or a file be formatted after it is written?",
+        a: "A {{posttooluse|PostToolUse}} hook: normalise, redact, or run the formatter on the written file.",
+        why: "Like an assistant who tidies each document after it arrives. It cannot undo the action.", tags: "T1.5" },
+      { id: "q3", short: "Rule must hold", q: "A CLAUDE.md rule conflicts with someone's personal file, and it must hold every time?",
+        a: "A hook configured in settings.json, for example a PostToolUse formatter. No CLAUDE.md placement gives a guarantee.",
+        why: "All CLAUDE.md levels are combined; with a conflict, Claude may follow either. “The more specific file wins” is the trap.", tags: "T3.1" },
+      { id: "q4", short: "Missing for one", q: "A rule is missing for one teammate?",
+        a: "It lives in someone's ~/.claude/CLAUDE.md. Move it to the project CLAUDE.md and commit it.",
+        why: "Missing means wrong place. Must hold means wrong tool (see the step above). Vague means rewrite it to be specific and checkable.", tags: "T3.1" }
+    ],
+    fallback: { short: "Prompt is fine", a: "If a miss is harmless (tone, a style preference), a clear instruction in the prompt is enough. Hooks are for rules where one miss is unacceptable.", tags: "T1.5" },
+    traps: [
+      "PostToolUse to “flag” something that had to be prevented: the action already happened.",
+      "Moving the rule to CLAUDE.local.md so it “loads last”: load order is not precedence, and that file is not shared. (CLAUDE.local.md is from the Claude Code docs, not the exam guide.)"
+    ],
+  },
+  {
+    id: "tools", short: "Tools & MCP", dom: "d2", tasks: "2.1 · 2.2 · 2.3 · 2.4 · 2.5",
+    name: "Tools and MCP",
+    start: "A tool is misbehaving, or you are wiring one up.",
+    steps: [
+      { id: "q1", short: "Wrong tool", q: "The model picks the wrong one of several clear tools, or prefers built-in Grep over a better MCP tool?",
+        a: "Sharpen the descriptions: what each tool does, its inputs, and how it differs from its neighbours.",
+        why: "Not removing tools, not a routing layer. If the descriptions are already good, look for system-prompt wording that echoes a tool name and rewrite it with distinct terms.", tags: "T2.1 · T2.4" },
+      { id: "q2", short: "Generic tool", q: "One generic tool takes a free-text instruction and keeps returning the wrong shape?",
+        a: "Split it into purpose-specific tools, each with its own input and output contract.", why: "Not more examples, and not an enum option on the same tool.", tags: "T2.1" },
+      { id: "q3", short: "Too many tools", q: "An agent has too many tools (say 18 rather than 4–5) and chooses badly?",
+        a: "Give each agent only the tools its role needs. Allow a few narrow cross-role tools for frequent needs, like verify_fact for the synthesis agent.",
+        why: "Every extra tool is one more wrong choice. Deeper work still goes through the coordinator.", tags: "T2.3" },
+      { id: "q4", short: "Tool fails", q: "A tool call fails?",
+        a: "Return {{iserror|isError}}: true with the error in the content, plus its category and whether a retry could help. A business-rule error is not retryable and gets a customer-friendly explanation.",
+        why: "Never throw an exception from the handler. An opaque “Operation failed” gives the model nothing to reason with.", tags: "T2.2" },
+      { id: "q5", short: "Must run first", q: "A specific tool must run first?",
+        a: "Set {{tool_choice}} to that named tool on the first call only; later turns go back to auto.",
+        why: "\"any\" guarantees a tool call, not the right one. Forcing it on every call means the next tools can never run.", tags: "T2.3" },
+      { id: "q6", short: "Mixed formats", q: "Tool results arrive in mixed formats (Unix times, ISO dates, numeric status codes)?",
+        a: "A PostToolUse hook normalises them before the model sees them.",
+        why: "The hook is code that runs after every tool call, so each result reaches the model in one format. Asking the model to convert formats in the prompt is not reliable.", tags: "T1.5" },
+      { id: "q7", short: "MCP setup", q: "Connecting an MCP server in Claude Code?",
+        a: "For the team: the project's {{.mcp.json}}, committed, with secrets written as ${GITHUB_TOKEN}. Personal or experimental: ~/.claude.json. Expose catalogs (doc trees, schemas) as resources and actions as tools.",
+        why: "Tools from all configured servers are available at once. For a standard system like Jira, use a community server; build your own only for team-specific workflows.", tags: "T2.4" }
+    ],
+    fallback: { short: "Built-in tool", a: "Picking a built-in tool: Grep searches file contents, Glob matches file-name patterns, Edit needs a unique piece of text. If there is none, Read the file, change it, and Write it back.", tags: "T2.5" },
+    traps: [
+      "Reorder the tools so the right one comes first: there is no documented order preference.",
+      "Force the tool on every call: the following tools can never run.",
+      "Throw an exception from the MCP handler.",
+      "An opaque “Operation failed”, even with isError set."
+    ],
+  },
+  {
+    id: "where", short: "Where it lives", dom: "d3", tasks: "3.1 · 3.2 · 3.3",
+    name: "Where does this instruction live?",
+    start: "You have an instruction for Claude Code and need a home for it.",
+    steps: [
+      { id: "q1", short: "Only you", q: "Only you want it: a personal preference or an experiment?",
+        a: "~/.claude/CLAUDE.md, or a personal skill in ~/.claude/skills/ under a different name.", why: "It is not shared through version control. That is the classic “my teammate doesn't get the instruction” bug.", tags: "T3.1" },
+      { id: "q2", short: "On demand", q: "Needed only now and then, for one task (a release procedure, an audit)?",
+        a: "A skill in .claude/skills/ or a project command in .claude/commands/. It loads only when someone runs it.", why: "Universal standards that must always apply belong in CLAUDE.md, not in a skill.", tags: "T3.2" },
+      { id: "q3", short: "File pattern", q: "Is there a file-path pattern exactly as wide as the convention (all **/*.test.tsx, all Terraform files)?",
+        a: ".claude/rules/*.md with a paths: pattern in its frontmatter.", why: "It beats per-folder CLAUDE.md files when the matching files are spread across folders. Check the pattern reaches every file the convention covers.", tags: "T3.3" }
+    ],
+    fallback: { short: "Whole team", a: "It applies everywhere, to the whole team: the project {{claude.md|CLAUDE.md}}. @import keeps it modular but still loads everything; to cut what loads, move area-specific parts into path-scoped .claude/rules/ files. /memory shows what is loaded.", tags: "T3.1" },
+    traps: [
+      "A pattern narrower than the convention: API conventions apply to every caller, not just src/api/**.",
+      "Splitting the root CLAUDE.md with @imports to reduce what loads: imports load eagerly, so it doesn't cut what loads. A package's own CLAUDE.md using @import for just its standards is the guide's pattern.",
+      "Packaging universal standards as a skill: people forget to run it."
+    ],
+  },
+  {
+    id: "config", short: "Configuring work", dom: "d3", tasks: "3.2 · 3.4 · 3.5 · 3.6 · 4.6",
+    name: "Configuring the work in Claude Code",
+    start: "Setting up how Claude Code runs a task.",
+    steps: [
+      { id: "q1", short: "Lots of output", q: "Would this skill dump a lot of output (or exploratory noise) into the main conversation?",
+        a: "{{fork|context: fork}}. It runs in an isolated subagent and only the summary comes back.", why: "The trigger is output volume, not how long it runs.", tags: "T3.2" },
+      { id: "q2", short: "Limit tools", q: "Must the skill be limited to certain tools (read-only, nothing destructive)?",
+        a: "{{allowed-tools}}. Missing arguments can be prompted for with argument-hint.", why: "Forking is not a sandbox; tool limits are a separate setting. Product drift: in today's Claude Code, allowed-tools pre-approves tools (no permission prompt) and disallowed-tools blocks them. On the exam, use the guide's meaning: allowed-tools restricts.", tags: "T3.2" },
+      { id: "q3", short: "Plan first", q: "Are there several valid approaches, or a change across many files (a library migration across 45 files)?",
+        a: "{{plan mode|Plan mode}} first, then execute the approved plan. Hand noisy discovery to the Explore subagent.", why: "A one-file fix or a single added check: act directly.", tags: "T3.4" },
+      { id: "q4", short: "Read differently", q: "Is the output off in style or format, or read in different ways each time?",
+        a: "2–3 concrete input → output examples, with why they are good. For edge cases, share failing tests. In unfamiliar territory, have Claude interview you first.", why: "It is an interpretation problem, not a capability problem. A bigger model is not the fix.", tags: "T3.5" },
+      { id: "q5", short: "Linked problems", q: "Several problems that affect each other?",
+        a: "Describe them all in one detailed message. Independent problems can go one at a time.", why: "Claude needs the whole picture to make interacting fixes consistent.", tags: "T3.5" },
+      { id: "q6", short: "In CI", q: "Running in {{ci|CI}} with nobody at a terminal, output read by the next step?",
+        a: "claude -p with --output-format json and --json-schema, in a fresh session. Standards come from CLAUDE.md. On re-runs, include earlier findings and report only new or open issues.",
+        why: "-p runs it with nobody needed to answer prompts, so the job doesn't hang. JSON output that follows a schema gives the next step something it can parse, for example to post inline PR comments.", tags: "T3.6" }
+    ],
+    fallback: { short: "Review", a: "Reviewing what the session just produced: use a separate, independent instance without the generating context. For big changes, one pass per file plus a cross-file integration pass.", tags: "T4.6 · T3.6" },
+    traps: [
+      "Fork because “it runs a long time”: a 25-minute skill that prints 6 lines doesn't need it.",
+      "Fork because “it runs in the background”: fork decides where output lands, not when work runs.",
+      "Fork because “it sandboxes it”: that is allowed-tools.",
+      "Plan mode “because it's risky”: the trigger is several valid approaches, not cost.",
+      "Self-review, extended thinking, or --resume of the author session to review its own work."
+    ],
+  },
+  {
+    id: "output", short: "Output is wrong", dom: "d4", tasks: "4.1 · 4.2 · 4.3 · 4.4",
+    name: "The output is wrong. What kind of wrong?",
+    start: "Claude's output has a problem you need to fix at the source.",
+    steps: [
+      { id: "q1", short: "Invented values", q: "It invents values for fields the document doesn't state?",
+        a: "Nullable fields, and the instruction “if not explicitly stated, return null”.", why: "Not a second checker model, not required fields, not a bigger model.", tags: "T4.3" },
+      { id: "q2", short: "Shape guaranteed", q: "The shape must be guaranteed?",
+        a: "Tool use with a strict JSON schema, plus format rules in the prompt.", why: "A schema removes syntax errors. It does not make the values correct.", tags: "T4.3" },
+      { id: "q3", short: "Inconsistent", q: "Values or style are inconsistent (citations, dates, names, assertion styles)?",
+        a: "{{few-shot|Few-shot}}: 2–4 examples of messy input → the output you want, covering the variants you have seen, with the reasoning.",
+        why: "Fix it at the source. A linter, rewriter or post-processing step is the trap, unless it is a fixed rule like formatting on save (then a PostToolUse hook).", tags: "T4.2" },
+      { id: "q4", short: "Outside the list", q: "A category field gets values outside the fixed list?",
+        a: "Enum plus \"other\" with a free-text detail field. Add \"unclear\" if the source is genuinely ambiguous.", why: "Nothing is lost, and the list can grow.", tags: "T4.3" },
+      { id: "q6", short: "Mixed content", q: "One output combines different kinds of content (financial figures, news, technical risks)?",
+        a: "Show each kind in its own form: tables for numbers, prose for narrative, lists for findings.", why: "Not one shared format for everything.", tags: "T5.6" },
+      { id: "q7", short: "Catch errors", q: "You need to catch wrong extractions?",
+        a: "Check in code: compute a total from the line items and compare it with the stated total. Rules that link fields (dates in order, sums match) need validation code whose specific errors feed the retry. In a pipeline, validate between steps.",
+        why: "A JSON schema can't express relationships between fields. Few-shot examples reduce errors but don't catch the ones that still happen. A detected_pattern field makes the model's reasoning checkable.", tags: "T4.4" }
+    ],
+    fallback: { short: "Retry?", a: "Will a retry help? Only if the data is in the input. A retry with the document, the failed output and the exact error fixes format problems. No retry can produce a source that isn't there.", tags: "T4.4" },
+    traps: [
+      "A second LLM to verify invented values: return null instead.",
+      "“Use a more capable model” for inconsistent output: use examples.",
+      "A linter or rewrite step for inconsistent style: fix it at the source.",
+      "Making a field required so the model must fill it: it pushes the model to invent."
+    ],
+  },
+  {
+    id: "batch", short: "Batch or live", dom: "d4", tasks: "4.5",
+    name: "Batch or real time?",
+    start: "Deciding how to run a large set of requests.",
+    steps: [
+      { id: "q1", short: "Someone waits", q: "Does something wait on the result (a pre-merge check, a live user), or does it need multi-turn tool calls?",
+        a: "The synchronous API.", why: "Batches have no latency guarantee and can't run tools mid-request.", tags: "T4.5" },
+      { id: "q2", short: "Mostly routine", q: "Mostly routine work, with a few urgent cases?",
+        a: "Batch the routine work; run the urgent cases in real time.", why: "Each part gets the right trade-off.", tags: "T4.5" },
+      { id: "q3", short: "Deadline", q: "Is there an {{sla|SLA}} (a deadline)?",
+        a: "Longest wait before submitting + up to 24 hours of processing must fit inside the SLA with a margin. 30-hour SLA → submit every 4 hours (28 hours worst case), not every 6 (30, no margin).", why: "A plan that lands exactly on the deadline has no room for delay.", tags: "T4.5" },
+      { id: "q4", short: "Some failed", q: "Some requests in a batch failed?",
+        a: "Match results to requests by {{custom_id}}; results don't come back in order. Resubmit only the failed ones, fixed first (for example, split oversized documents).", why: "Read the error: if a document was too long for the context window, split it into chunks. Raising max_tokens can't make an input fit (max_tokens limits the reply, not the input).", tags: "T4.5" }
+    ],
+    fallback: { short: "Batch it", a: "A large job nobody waits on (overnight, weekly): the Message Batches API, 50% cheaper. Refine the prompt on a sample first.", tags: "T4.5" },
+    traps: [
+      "Moving a blocking check to batch because “most batches finish within an hour”.",
+      "Resubmitting the whole batch after a few failures.",
+      "A schedule whose worst case lands exactly on the SLA."
+    ],
+  },
+  {
+    id: "context", short: "Context pressure", dom: "d5", tasks: "5.1 · 5.4 · 1.3 · 1.7",
+    name: "Context is filling up, or the session is getting long",
+    start: "The context or session is under pressure.",
+    steps: [
+      { id: "q2", short: "Stale results", q: "Is the user coming back after a gap, or is the context polluted (stale file reads, several failed attempts)?",
+        a: "A new session with a structured summary (issue, what was done, status, what failed), then fresh tool calls.",
+        why: "Old results left in context keep misleading the model. Not re-reading in the same session, not {{fork_session}} (it copies the pollution), not a blank session (it loses the lessons).", tags: "T5.1 · T1.7" },
+      { id: "q3", short: "Several issues", q: "Does one conversation hold several issues, some already resolved?",
+        a: "Pull each issue's hard facts (order IDs, amounts, dates, statuses, promises) into a structured {{case facts|case-facts block}}. Keep it in a separate layer and send it with every prompt, outside any summary. Keep the conversation alongside it, not instead of it.", why: "A prose summary of earlier turns is the trap: it turns “$86.40 by 14 March” into “a partial refund soon”.", tags: "T5.1" },
+      { id: "q4", short: "Getting vague", q: "Is the agent's own context degrading (“typical patterns” instead of real class names) while the work goes on?",
+        a: "Summarise what has been found, then spawn subagents for specific named questions, with that summary in their prompt. The main agent keeps the overview.", why: "Not /clear, and not merging subagent results by hand in the degraded main thread. /compact is fine for trimming verbose discovery output; /clear throws everything away.", tags: "T5.4 · T1.3" },
+      { id: "q5", short: "Two approaches", q: "Do you want to try two approaches from the same starting point?",
+        a: "fork_session from the shared baseline.", why: "Branch, don't restart.", tags: "T1.7" },
+      { id: "q6", short: "Named session", q: "Continuing a specific earlier session whose context is still mostly valid?",
+        a: "--resume <name>, plus exactly what changed (for example, which files were renamed).", why: "--continue only picks up the most recent conversation, which may be the wrong one. (--continue is from the Claude Code docs, not the exam guide.)", tags: "T1.7" },
+      { id: "q7", short: "Long exploration", q: "A long exploration whose findings must survive context pressure?",
+        a: "Write findings to a scratchpad file as you go.", why: "Findings in a file stay exact even when the context is trimmed.", tags: "T5.4" },
+      { id: "q8", short: "Bloated results", q: "Are tool results bloating the context (40+ fields per call when the task needs 4)?",
+        a: "Trim each result to the fields the task needs, keeping them structured.", why: "Not a vector database, and not prose summaries in place of exact fields.", tags: "T5.1" },
+      { id: "q9", short: "Lost middle", q: "In a long combined input, findings in the middle get dropped while the start and end are fine?",
+        a: "Put a key-findings summary at the top and organise the details under clear section headers.", why: "Not a bigger context window, and not “read carefully”.", tags: "T5.1" }
+    ],
+    fallback: { short: "Facts + trim", a: "Keep exact facts in a {{case facts|case-facts block}}, trim tool results to the fields the task needs, and keep the active issue's turns in full.", tags: "T5.1" },
+    traps: [
+      "Summarise earlier turns into a narrative and keep only the active issue in full: amounts and dates blur.",
+      "A vector database for your own bounded conversation.",
+      "Resume and re-run every earlier tool: wasteful, and the stale results stay in context.",
+      "Strip old tool results from the transcript: later turns then point at results that no longer exist.",
+      "A sliding window of the last N turns: it silently drops the issue being discussed.",
+      "/clear mid-task: throws away understanding already built."
+    ],
+  },
+  {
+    id: "esc", short: "Escalation", dom: "d5", tasks: "5.2 · 1.4",
+    name: "A frustrated customer, or one who asks for a person",
+    start: "A customer shows frustration or asks for a human.",
+    guide: "Exam guide v1.0, task 5.2: “Honoring explicit customer requests for human agents immediately without first attempting investigation.”",
+    steps: [
+      { id: "q1", short: "Outside capability", q: "Is the case outside what the agent can do? Policy is silent (a competitor price match when policy only covers your own site), the amount is over its limit, or it can't make progress.",
+        a: "Escalate, with a structured handoff.", why: "A policy gap is a trigger. Don't read silence as a no, and don't stretch a rule by analogy.", tags: "T5.2 · T1.4" },
+      { id: "q2", short: "Asked again", q: "Have they repeated the request for a human after the agent offered to resolve it?",
+        a: "Escalate now, with the summary attached.", why: "They have chosen twice.", tags: "T5.2" },
+      { id: "q3", short: "Asks for a human", q: "Do they explicitly ask for a human (“please transfer me to a human agent”)? Even if no tools have been called yet.",
+        a: "Escalate immediately, even if the fix looks quick. Don't investigate first, and don't ask them to choose again.", why: "The guide says to honour the request “without first attempting investigation”.", tags: "T5.2" },
+      { id: "q4", short: "Vague frustration", q: "Frustrated but vague (“I've had enough of this, can somebody sort it out?”), and the fix is confirmed, within policy and one step away?",
+        a: "Acknowledge, say it can be resolved now, and offer: fix it now or escalate. Escalate if they repeat the wish.", why: "Only when the wording is frustration, not a clear request for a person.", tags: "T5.2" },
+      { id: "q5", short: "Several matches", q: "Several accounts or orders match the customer?",
+        a: "Ask for another identifier. Never pick one by guesswork.", why: "A heuristic pick risks acting on the wrong account.", tags: "T5.2" },
+      { id: "q6", short: "The handoff", q: "Writing the handoff for the human?",
+        a: "A structured {{handoff|handoff}}: customer ID, root cause, amount, actions already taken, recommended action, and why it is escalated.",
+        why: "The human can't see the transcript. Not the full transcript (too much), not the raw complaint and tool excerpts (they must redo the work). If a tool timed out, say what is verified and offer to retry or escalate.", tags: "T1.4" }
+    ],
+    fallback: { short: "Resolve", a: "Frustrated, but no human requested: acknowledge and resolve it within the agent's authority, then confirm.", tags: "T5.2" },
+    traps: [
+      "Resolve it quietly after they asked for a person: it overrides their choice.",
+      "“What hasn't worked before?”: it interrogates a frustrated customer.",
+      "Escalate at once when they only vented and the fix is one step away.",
+      "“Would you prefer a human or a quick fix?” after they explicitly asked for a human.",
+      "Escalate on sentiment or on the model's own confidence score: neither measures how hard the case is."
+    ],
+  },
+  {
+    id: "rel", short: "Reliability", dom: "d5", tasks: "5.4 · 5.5 · 5.6 · 2.5",
+    name: "Reviewers, confidence, sources and exploration",
+    start: "Match your situation; the first Yes is the answer.",
+    steps: [
+      { id: "q1", short: "Scarce reviewers", q: "Deciding which items go to a limited number of human reviewers?",
+        a: "Confidence per field, calibrated on a labelled validation set. Send the low-confidence items, and items whose source is unclear or contradicts itself.", why: "Not a random sample. Sampling measures quality; it doesn't decide what to review. After you automate the high-confidence items, keep a stratified random sample of them to measure errors and catch new patterns.", tags: "T5.5" },
+      { id: "q2", short: "97% overall", q: "Someone wants to cut review because overall accuracy is 97%?",
+        a: "Break accuracy down by document type and by field first.", why: "An average can hide a segment that is failing badly.", tags: "T5.5" },
+      { id: "q3", short: "Many sources", q: "Writing a report from many sources that sometimes conflict?",
+        a: "Tag each claim with its source while reading, log conflicts as you go, and keep dates as metadata. Report established and contested findings in separate sections.", why: "Not matching claims to likely sources afterwards, and not averaging conflicting numbers.", tags: "T5.6" },
+      { id: "q4", short: "Big codebase", q: "Exploring a large codebase?",
+        a: "Grep for the entry points, Read along the imports, and keep a scratchpad.", why: "Not reading all 400 files first, and not one subagent per folder.", tags: "T5.4 · T2.5" },
+      { id: "q5", short: "All callers", q: "Finding every caller before removing a function?",
+        a: "First collect every name it goes by (re-exports, aliases in wrapper modules), then Grep for each name.", why: "Grep for the original name only misses the aliases.", tags: "T2.5" },
+      { id: "q6", short: "Forgets turns", q: "A stateless API agent “forgets” earlier turns?",
+        a: "Send the full conversation history with every request.", why: "It is not a model memory limit.", tags: "T5.1" }
+    ],
+    fallback: { short: "Confidence", a: "A model's confidence per finding is useful for routing review, once calibrated. Used alone and uncalibrated, it is a poor guide.", tags: "T4.6 · T5.5" },
+    traps: [
+      "A random 20% sample to decide what humans review. (A stratified sample of auto-approved items is right for measuring errors.)",
+      "Trusting an aggregate accuracy number without breaking it down.",
+      "Rebuilding citations after the report is written."
+    ],
+  }
+];
+
+/* ---------- Red flags in answer options ---------- */
+const FLAGS = [
+  ["“Train a classifier” / “pattern-based routing”", "The coordinator decides per request", ""],
+  ["“Build a comprehensive plan first”", "Adaptive, step by step", "The steps are genuinely known and independent"],
+  ["“Add to the system prompt: NEVER…”", "A hook or prerequisite gate", "A miss is tolerable: then prompt criteria are fine"],
+  ["“Spawn a subagent per folder / category”", "Grep entry points, or scoped named questions", "Known, complete, independent volume (200 contracts)"],
+  ["“Re-run all previous tools”", "Summary plus selective fresh calls", ""],
+  ["“Vector database” for one conversation", "Case-facts block plus trimmed tool results", ""],
+  ["“/clear” or “start fresh” mid-task", "Summarise, then delegate", "A returning customer: a fresh session with a summary"],
+  ["“Standardise everything to one format”", "Each content type in its own form", ""],
+  ["“Use a more capable model”", "Few-shot examples, clearer criteria", ""],
+  ["“Add a second LLM to verify”", "Return null; cross-check totals", "Independent review of generated code"],
+  ["“Throw an exception”", "isError + content + category", ""],
+  ["“Force the tool on every call” / “reorder tools”", "Force on the first call, then auto", ""],
+  ["“Escalate immediately” / “process it and tell them”", "Acknowledge, say what's possible now, offer the choice (vague frustration only)", "An explicit or repeated request for a human, or outside policy: escalate now"],
+  ["“Raw excerpts” / “full transcript” to a human", "A structured handoff summary", ""],
+  ["“Reconstruct sources afterwards”", "Tag sources while reading", ""],
+  ["“Random sample” to allocate review", "Calibrated field-level confidence", "The goal is measuring quality, not allocating review"],
+  ["“Self-reported confidence” or “sentiment” as the escalation trigger", "Explicit criteria", ""],
+  ["“--resume the session that wrote it” to review it", "A fresh independent instance", ""],
+  ["“Fork because it's slow / runs in the background / sandboxes it”", "Fork only for high output volume", ""],
+  ["“Increase max_tokens” when the input was too long for the context window", "Chunk the oversized input", ""],
+  ["“--continue” to reach a named session (--continue is from the Claude Code docs, not the exam guide)", "--resume <name>", "It really is the most recent conversation"],
+  ["“Add a linter / rewrite / post-processing step” for inconsistent output", "Few-shot examples with reasoning", "A fixed must-hold rule like formatting on save: a PostToolUse hook"],
+  ["“More detailed tool descriptions” when the prompt reuses tool names", "Rewrite the overlapping prompt wording", "The descriptions really are minimal"],
+  ["“Split CLAUDE.md with @imports” to reduce load", "Path-scoped .claude/rules/", "The goal is only readability, or a package's own CLAUDE.md imports just its standards"]
+];
+
+/* ---------- Example exam situations that land on each answer ---------- */
+const EXAMPLES = {
+  "judge.q1": ["Agents may issue credits up to €250; above that a manager must approve. The prompt says so, yet a few large credits still go through.", "Identity must be verified before any payout address changes. Which mechanism makes that certain?"],
+  "judge.q2": ["300 vendor contracts must each be checked against the same 12-point checklist.", "A pipeline always collects sales data, then analyses trends, then writes a summary. How should the steps be organised?"],
+  "judge.q3": ["An agent investigates why a nightly export sometimes drops rows; nobody knows where the fault is.", "A research coordinator gets everything from one-line definitions to multi-source reviews."],
+  "judge.q4": ["“I was charged twice, the app crashes on login, and please cancel one subscription.”", "One support message mixes a late delivery and a damaged item."],
+  "judge.fb": ["When should the support agent escalate a technical issue? The team wants it judged case by case.", "Escalation rules keep breaking on unusual cases; someone proposes a rules table of issue type × customer segment."],
+  "loop.q1": ["A reply says “Let me check that order” and requests a tool in the same turn, but the loop stops there.", "The agent repeats the same search because results never reach the conversation."],
+  "loop.q2": ["Which field tells the loop the agent has finished?", "The loop stops whenever a reply contains the word “done”. What should it check instead?"],
+  "loop.fb": ["Every run is capped at 5 iterations as the main stop; simple tasks waste turns and hard ones get cut off.", "The loop ends as soon as Claude returns any text."],
+  "sub.q1": ["The coordinator's prompt lists three subagent types, but it never spawns one.", "Spawning silently fails even though the system prompt describes each subagent in detail."],
+  "sub.q2": ["The synthesis subagent writes a generic summary that ignores what search found.", "Subagents run one after another, yet the second doesn't know the first one's results."],
+  "sub.q3": ["Citations go missing between the analysis agent and the report agent.", "The final report can't say which document each figure came from."],
+  "sub.q4": ["One of five search subagents times out. What should it send back?", "A document subagent can't open a corrupted file after a retry, and the whole run halts."],
+  "sub.q5": ["The user asks the coordinator to rephrase the last paragraph.", "A quick follow-up can be answered from findings the coordinator already has."],
+  "sub.q6": ["Mid-exploration, you need to know which modules call the tax API.", "The main agent is getting vague, and you can name three specific questions to hand off."],
+  "sub.q7": ["A three-hour multi-agent analysis crashes halfway; restarting means redoing everything.", "On resume: replay the whole coordinator log to every agent, or something leaner?"],
+  "sub.q8": ["Every subagent succeeded, but a report on EV adoption covers Europe and the US and skips Asia.", "The report misses whole subtopics although no errors were logged."],
+  "sub.fb": ["A codebase review plans one subagent per folder before anyone knows where the bug is.", "400 files split by file count across 8 subagents."],
+  "hooks.q1": ["The agent must never push to main.", "Refunds above $500 must go to a human before they run."],
+  "hooks.q2": ["Tool results mix Unix timestamps and ISO dates, and card numbers must be masked before Claude sees them.", "Every file Claude writes must go through the team's formatter."],
+  "hooks.q3": ["A project CLAUDE.md rule conflicts with a developer's personal file, and the rule must always hold.", "Does “the more specific CLAUDE.md wins” settle conflicts?"],
+  "hooks.q4": ["A team rule works for the lead but not for a new hire who cloned the repo.", "Instructions are followed on one laptop only."],
+  "hooks.fb": ["Marketing wants a warmer tone in replies, and someone proposes a hook.", "A recoverable best practice is followed 88% of the time. Does it need a hook?"],
+  "tools.q1": ["The agent passes email addresses to lookup_order when they belong to get_customer.", "The agent uses built-in Grep instead of the team's better MCP code-search tool."],
+  "tools.q2": ["process_text(text, task) translates, summarises and classifies, and outputs keep the wrong shape.", "One read_file(instruction) tool serves invoices, contracts and letters."],
+  "tools.q3": ["Every subagent has all 18 tools and chooses badly.", "The synthesis agent has web search and keeps running new searches."],
+  "tools.q4": ["A payment API times out. What should the MCP tool return?", "A refund fails because clearance items are final sale, and the agent retries three times."],
+  "tools.q5": ["extract_metadata must run before any enrichment tool.", "The model sometimes skips the pipeline's required first step."],
+  "tools.q6": ["Order tools return Unix timestamps, ISO strings and numeric status codes.", "Two MCP tools return dates as 1718000000 and 2024-06-10, and the agent compares them wrongly."],
+  "tools.q7": ["The whole team should use a GitHub MCP server without committing anyone's token.", "You want to try an experimental MCP server just for yourself."],
+  "tools.fb": ["List every file named *.test.tsx in a monorepo.", "Edit fails because the text matches five identical blocks."],
+  "where.q1": ["You want Claude to answer you in British English in every project, without affecting teammates.", "Your personal variation of a team skill."],
+  "where.q2": ["A release checklist the team runs a few times a month.", "An audit procedure used only before compliance reviews."],
+  "where.q3": ["Testing conventions for every **/*.test.tsx file across 40 folders.", "Terraform rules that should load only for files under terraform/."],
+  "where.fb": ["An API error format that applies to the server, the client library and the tests.", "A 900-line root CLAUDE.md, and you want less loaded per session."],
+  "config.q1": ["A dependency-audit skill prints 2,000 lines and the session loses the task.", "A brainstorm skill produces ten designs that bury the conversation."],
+  "config.q2": ["An audit skill should only read files, not edit them.", "People run /migrate without saying which table."],
+  "config.q3": ["Migrate 45 files to a new HTTP library, with two valid retry designs.", "A one-line null check with a clear stack trace: plan mode or not?"],
+  "config.q4": ["“Normalise the names” gives different results every time.", "Building a cache in an area you don't know well."],
+  "config.q5": ["A date parser, a timezone conversion and a report total are all wrong and affect each other.", "A typo in a log message and an unrelated slow query: one message or two?"],
+  "config.q6": ["A CI job calls Claude Code and hangs, waiting for input.", "Review findings must become inline PR comments, and parsing free text keeps breaking."],
+  "config.fb": ["The session that wrote a feature reviews its own diff and finds nothing.", "A 40-file pull request gets a shallow review that contradicts itself."],
+  "output.q1": ["Many contracts have no end date, and the extractor returns plausible made-up dates.", "Optional fields come back filled with guesses."],
+  "output.q2": ["A downstream system needs the same fields every time.", "Output sometimes misses a bracket and breaks the parser."],
+  "output.q3": ["Citation formats vary between runs despite detailed instructions.", "Test assertions come out in different styles, and someone proposes a linter."],
+  "output.q4": ["A complaint about account login keeps getting labelled “product”.", "Some documents are genuinely ambiguous about their category."],
+  "output.q6": ["A briefing mixes quarterly revenue, a news summary and a list of technical risks.", "Someone proposes converting all content to one shared format."],
+  "output.q7": ["Invoices pass the schema, but the line items don't add up to the total.", "A wrong classification silently corrupts the next extraction step."],
+  "output.fb": ["Retries keep failing because the address is on an attachment the system never received.", "A date came back as “March 4th” although the document says “4 March 2025”."],
+  "batch.q1": ["Move the pre-merge check to batch to halve costs?", "An agent needs several rounds of tool calls per request."],
+  "batch.q2": ["Mostly overnight reports, plus a few urgent customer escalations.", "Weekly audits mixed with occasional same-hour requests."],
+  "batch.q3": ["Documents must be processed within 36 hours; batches can take up to 24.", "A 30-hour SLA: submit every 4 hours or every 6?"],
+  "batch.q4": ["120 of 5,000 transcripts failed because they were too long for the context window.", "Results come back in a different order than they were sent."],
+  "batch.fb": ["A weekly summary of 10,000 support tickets.", "50,000 contracts with a new prompt: what do you do first?"],
+  "context.q2": ["A customer returns the next day; the order status may have changed.", "Three failed fix attempts and a colleague's push have polluted the session."],
+  "context.q3": ["One chat holds a resolved delivery issue and an open double charge.", "Summaries keep turning “$86.40 by 14 March” into “a partial refund soon”."],
+  "context.q4": ["After two hours the agent says “probably a repository pattern” instead of the class it found earlier.", "The main exploration session is getting vague and inconsistent."],
+  "context.q5": ["Compare two refactoring approaches from the same analysis.", "Try a cache and a query rewrite from one baseline."],
+  "context.q6": ["Resume yesterday's named session; two files were renamed overnight.", "--continue opened the wrong conversation."],
+  "context.q7": ["A long legacy-code exploration must keep exact class names and paths.", "Findings must survive when the context is trimmed."],
+  "context.q8": ["Order lookups return 45 fields when the task needs 5.", "Tool results crowd out the conversation."],
+  "context.q9": ["Twelve reports pasted together; findings from reports 5 to 8 go missing.", "A long input where the middle keeps getting ignored."],
+  "context.fb": ["A long chat with one active issue and several closed side-threads.", "Every turn re-sends long tool results, and exact amounts start to blur."],
+  "esc.q1": ["A customer asks you to match a competitor's price; policy only covers your own site.", "A refund is above the agent's limit."],
+  "esc.q2": ["Offered a fix, the customer says again: “I still want a person.”", "A second request for a human after the agent's offer."],
+  "esc.q3": ["A customer opens the chat with: “Please transfer me to a human agent.” The agent has not looked anything up yet.", "Halfway through a billing question the agent could fix, the customer writes: “Stop, I'd rather speak to someone on your team.”"],
+  "esc.q4": ["“Third email about this parcel, honestly.” The refund is within policy and one step away.", "“This is ridiculous, sort it out.” The fix is one step away."],
+  "esc.q5": ["get_customer returns three accounts named Ana Silva.", "Two orders match the customer's description."],
+  "esc.q6": ["What should the agent pass on after a long billing dispute?", "The handoff is one line: “Customer needs help with billing.”"],
+  "esc.fb": ["A customer types in capitals that their discount code failed; no human requested.", "An annoyed customer whose issue is within the agent's power."],
+  "rel.q1": ["Two reviewers can check 300 of 5,000 documents a day.", "Which extractions should humans see first?"],
+  "rel.q2": ["An extractor is 97% accurate overall, and managers want to drop review.", "Handwritten delivery notes are a small share of all documents."],
+  "rel.q3": ["Two credible sources give different market sizes.", "A 31% vs 48% “conflict” comes from surveys in different years."],
+  "rel.q4": ["Where is “Card declined” handled in a 3,000-file codebase?", "15 related files, 8,000 lines: where do you start?"],
+  "rel.q5": ["Remove a function that is re-exported under two aliases.", "A Grep for the original name misses some callers."],
+  "rel.q6": ["A chatbot answers well but forgets what was said two messages ago.", "Each API request sends only the newest message."],
+  "rel.fb": ["Route human review by the model's own confidence, uncalibrated?", "Self-rated confidence as the only escalation trigger."]
+};
+
+/* ---------- Version ---------- */
+// Bump when the page changes, so a learner's published copy gets republished.
+const MAP_VERSION = "2026-10-09";
+
+/* ---------- Model ----------
+   One flowchart: a new question → reading routine → "What is it about?" → a trunk feeding one
+   row per situation. Each row: the situation box, then Q1 → No → Q2 → … → the default; Yes drops
+   from each question to its answer box. */
+const SIGNALS = {};
+ROUTER.forEach(([sig, id]) => { (SIGNALS[id] = SIGNALS[id] || []).push(sig); });
+const byKey = {};
+CHARTS.forEach(c => {
+  c.steps.forEach((s, i) => { s.n = i + 1; s.key = c.id + "." + s.id; s.chart = c; byKey[s.key] = s; });
+  c.fallback.key = c.id + ".fb"; c.fallback.isDefault = true; c.fallback.chart = c; byKey[c.fallback.key] = c.fallback;
+});
+
+/* ---------- Geometry ---------- */
+const SX = 0, SW = 320;            // situation boxes
+const X0 = SX + SW + 150, STEP = 330; // first question centre, spacing between questions
+const DW = 180, DH = 96, BW = 280;  // diamond and answer box sizes
+const TRUNK = -70;
+function plain(s) { return String(s).replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (m, k, l) => l || (GLOSSARY[k.toLowerCase()] || [k])[0]); }
+function brief(s) {
+  let t = plain(s); const cut = t.search(/\.(\s|$)/); if (cut > 20) t = t.slice(0, cut);
+  return t.length > 118 ? t.slice(0, t.lastIndexOf(" ", 115)) + "…" : t;
+}
+function wrap(s, max) {
+  const out = []; let line = "";
+  s.split(/\s+/).forEach(w => { if ((line + " " + w).trim().length > max && line) { out.push(line); line = w; } else line = (line + " " + w).trim(); });
+  if (line) out.push(line); return out;
+}
+const G = { rows: {}, nodes: {}, top: {}, bounds: [0, 0, 0, 0] };
+function computeLayout() {
+  let y = 0;
+  const cx = SX + SW / 2;
+  // start pill and the reading routine
+  G.top.start = { x: cx - 160, y, w: 320, h: 44 }; y += 44 + 34;
+  G.top.routine = ROUTINE.map(([t, d], i) => { const lines = wrap(t, 34); const h = 30 + lines.length * 16; const r = { x: cx - 160, y, w: 320, h, i, lines }; y += h + 30; return r; });
+  const last = G.top.routine[G.top.routine.length - 1];
+  G.top.flags = { x: last.x + last.w + 70, y: last.y + last.h / 2 - 38, w: 250, h: 76 };
+  const rdH = 140, rdW = 300;
+  G.top.router = { cx, cy: y + rdH / 2, w: rdW, h: rdH }; y += rdH + 60;
+  // one row per situation
+  CHARTS.forEach(c => {
+    const sig = wrap((SIGNALS[c.id] || []).join(" / "), 40);
+    const sigH = 40 + sig.length * 16;
+    const ans = [...c.steps, c.fallback].map(s => wrap(brief(s.a), 38));
+    const boxH = Math.max(...c.steps.map((s, i) => 48 + (ans[i].length - 1) * 16));
+    const dfH = 48 + (ans[ans.length - 1].length - 1) * 16;
+    const top = y, midY = top + Math.max(DH, sigH, dfH) / 2;
+    const row = { c, top, midY, sig, sigH, ans, boxH, dfH };
+    row.steps = c.steps.map((s, i) => ({ s, cx: X0 + i * STEP, cy: midY, box: { x: X0 + i * STEP - BW / 2, y: midY + DH / 2 + 46, w: BW, h: boxH } }));
+    const dfx = X0 + c.steps.length * STEP;
+    row.fb = { s: c.fallback, box: { x: dfx - BW / 2, y: midY - dfH / 2, w: BW, h: dfH } };
+    row.right = dfx + BW / 2;
+    row.bottom = midY + DH / 2 + 46 + boxH;
+    G.rows[c.id] = row;
+    y = row.bottom + 90;
+  });
+  const right = Math.max(...Object.values(G.rows).map(r => r.right));
+  G.bounds = [TRUNK - 40, -20, Math.max(right, G.top.flags.x + G.top.flags.w) + 40, y - 50];
+}
+
+/* ---------- Drawing ---------- */
+const svg = document.getElementById("map");
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const defs = el("defs", {}, svg);
+defs.innerHTML = '<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>';
+const gFlow = el("g", { class: "flow" }, svg);
+let sel = null; // { kind: "root"|"routine"|"chart"|"step", id }
+function lines(g, arr, x, y, cls, lh, anchor) {
+  const t = el("text", { x, y, class: cls, "text-anchor": anchor || "start" }, g);
+  arr.forEach((ln, i) => { const s = el("tspan", { x, dy: i ? lh : 0 }, t); s.textContent = ln; });
+  return t;
+}
+function arrow(x1, y1, x2, y2, on, color) {
+  const l = el("line", { x1, y1, x2, y2, "marker-end": "url(#arr)", class: "fedge" }, gFlow);
+  if (on) { l.style.stroke = color; l.style.strokeWidth = "2.5"; l.style.color = color; }
+  return l;
+}
+function label(x, y, text, on, color, anchor) {
+  const t = el("text", { x, y, class: "fyes", "text-anchor": anchor || "middle" }, gFlow); t.textContent = text;
+  if (on) t.style.fill = color; return t;
+}
+function clickable(g, onPick, aria) {
+  g.setAttribute("class", "fnode"); g.setAttribute("tabindex", "0"); g.setAttribute("role", "button"); g.setAttribute("aria-label", aria);
+  g.addEventListener("click", e => { e.stopPropagation(); onPick(); });
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(); } });
+}
+function selChart() { return sel && (sel.kind === "chart" ? CHARTS.find(c => c.id === sel.id) : sel.kind === "step" ? byKey[sel.id].chart : null); }
+function draw() {
+  gFlow.textContent = "";
+  const sc = selChart(), selStep = sel && sel.kind === "step" ? byKey[sel.id] : null;
+  const ink = "var(--ink)";
+  // start + routine
+  const st = G.top.start, sg = el("g", {}, gFlow);
+  const sr = el("rect", { x: st.x, y: st.y, width: st.w, height: st.h, rx: st.h / 2 }, sg);
+  sr.style.fill = "var(--ink)"; const stt = el("text", { x: st.x + st.w / 2, y: st.y + 27, "text-anchor": "middle", class: "fhead" }, sg); stt.textContent = "A new exam question"; stt.style.fill = "var(--bg)";
+  clickable(sg, () => pick({ kind: "root" }), "Start: a new exam question");
+  let prevBottom = st.y + st.h;
+  G.top.routine.forEach(r => {
+    arrow(r.x + r.w / 2, prevBottom + 2, r.x + r.w / 2, r.y - 4);
+    const g = el("g", {}, gFlow);
+    const on = sel && sel.kind === "routine" && sel.id === r.i;
+    const rect = el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 8 }, g);
+    rect.style.fill = on ? "color-mix(in srgb, var(--focus) 14%, var(--surface))" : "var(--surface)"; rect.style.stroke = on ? "var(--focus)" : "var(--line)"; rect.style.strokeWidth = on ? "2.5" : "1.5";
+    const n = el("text", { x: r.x + 14, y: r.y + 21, class: "fq" }, g); n.textContent = "STEP " + (r.i + 1); n.style.fill = "var(--ink-soft)";
+    const t = lines(g, r.lines, r.x + 14, r.y + 39, "flabel", 16); t.style.fill = ink;
+    clickable(g, () => pick({ kind: "routine", id: r.i }), "Reading step " + (r.i + 1) + ": " + ROUTINE[r.i][0]);
+    prevBottom = r.y + r.h;
+  });
+  const fl = G.top.flags, last = G.top.routine[G.top.routine.length - 1], fOn = sel && sel.kind === "flags";
+  const fline = el("line", { x1: last.x + last.w + 2, y1: last.y + last.h / 2, x2: fl.x - 4, y2: last.y + last.h / 2, "marker-end": "url(#arr)", class: "fedge" }, gFlow);
+  fline.style.strokeDasharray = "5 4"; fline.style.color = "var(--bad)"; fline.style.stroke = "var(--bad)";
+  const fgp = el("g", {}, gFlow);
+  const frc = el("rect", { x: fl.x, y: fl.y, width: fl.w, height: fl.h, rx: 10 }, fgp);
+  frc.style.fill = `color-mix(in srgb, var(--bad) ${fOn ? 20 : 9}%, var(--surface))`; frc.style.stroke = "var(--bad)"; frc.style.strokeWidth = fOn ? "3" : "1.5";
+  const fh1 = el("text", { x: fl.x + 14, y: fl.y + 24, class: "fhead2" }, fgp); fh1.textContent = "⚑ RED FLAGS"; fh1.style.fill = "var(--bad)";
+  const fh2 = lines(fgp, [FLAGS.length + " phrases that usually", "mark the wrong option"], fl.x + 14, fl.y + 44, "ftext", 16); fh2.style.fill = "var(--ink)";
+  clickable(fgp, () => pick({ kind: "flags" }), "Red flags in answer options");
+  const rd = G.top.router;
+  arrow(rd.cx, prevBottom + 2, rd.cx, rd.cy - rd.h / 2 - 4);
+  const rg = el("g", {}, gFlow);
+  const rp = el("path", { d: `M${rd.cx} ${rd.cy - rd.h / 2}L${rd.cx + rd.w / 2} ${rd.cy}L${rd.cx} ${rd.cy + rd.h / 2}L${rd.cx - rd.w / 2} ${rd.cy}Z` }, rg);
+  rp.style.fill = "var(--ink)";
+  const rt = lines(rg, ["What is this", "question about?"], rd.cx, rd.cy - 4, "fhead", 20, "middle"); rt.style.fill = "var(--bg)";
+  clickable(rg, () => pick({ kind: "root" }), "What is this question about?");
+  // trunk
+  const rows = CHARTS.map(c => G.rows[c.id]);
+  const trunkTop = rd.cy, lastMid = rows[rows.length - 1].midY;
+  const tk = el("path", { d: `M${rd.cx - rd.w / 2} ${rd.cy}L${TRUNK} ${rd.cy}L${TRUNK} ${lastMid}`, class: "fedge" }, gFlow); tk.style.fill = "none";
+  if (sc) { const r = G.rows[sc.id]; const hl = el("path", { d: `M${rd.cx - rd.w / 2} ${rd.cy}L${TRUNK} ${rd.cy}L${TRUNK} ${r.midY}`, class: "fedge" }, gFlow); hl.style.fill = "none"; hl.style.stroke = `var(--${sc.dom})`; hl.style.strokeWidth = "3"; }
+  // rows
+  rows.forEach(r => {
+    const c = r.c, color = `var(--${c.dom})`, active = sc === c;
+    const k = selStep && selStep.chart === c ? (selStep.isDefault ? c.steps.length : selStep.n - 1) : -1;
+    arrow(TRUNK, r.midY, SX - 4, r.midY, active, color);
+    // situation box
+    const sg2 = el("g", {}, gFlow);
+    const sy = r.midY - r.sigH / 2;
+    const srect = el("rect", { x: SX, y: sy, width: SW, height: r.sigH, rx: 12 }, sg2);
+    srect.style.fill = `color-mix(in srgb, ${color} ${active ? 26 : 14}%, var(--surface))`; srect.style.stroke = color; srect.style.strokeWidth = active ? "3" : "1.5";
+    const head = el("text", { x: SX + 14, y: sy + 22, class: "fhead2" }, sg2); head.textContent = c.short.toUpperCase(); head.style.fill = color;
+    const dm = el("text", { x: SX + SW - 12, y: sy + 22, "text-anchor": "end", class: "fq" }, sg2); dm.textContent = c.dom.toUpperCase(); dm.style.fill = color;
+    const st2 = lines(sg2, r.sig, SX + 14, sy + 42, "ftext", 16); st2.style.fill = ink;
+    clickable(sg2, () => pick({ kind: "chart", id: c.id }), "Situation: " + c.name);
+    arrow(SX + SW + 2, r.midY, X0 - DW / 2 - 4, r.midY, active && k >= 0, color);
+    // questions
+    r.steps.forEach((p, i) => {
+      const s = p.s, passed = k > i, current = k === i;
+      const dg = el("g", {}, gFlow);
+      const d = el("path", { d: `M${p.cx} ${p.cy - DH / 2}L${p.cx + DW / 2} ${p.cy}L${p.cx} ${p.cy + DH / 2}L${p.cx - DW / 2} ${p.cy}Z` }, dg);
+      d.style.fill = current ? `color-mix(in srgb, ${color} 22%, var(--surface))` : "var(--surface)";
+      d.style.stroke = current ? color : `color-mix(in srgb, ${color} 55%, var(--line))`; d.style.strokeWidth = current ? "3" : "1.5";
+      if (passed) dg.style.opacity = "0.55";
+      const q = el("text", { x: p.cx, y: p.cy - 18, "text-anchor": "middle", class: "fq" }, dg); q.textContent = "Q" + s.n; q.style.fill = color;
+      const t = lines(dg, wrap(s.short, 16), p.cx, p.cy + 2, "flabel", 15, "middle"); t.style.fill = ink;
+      clickable(dg, () => pick({ kind: "step", id: s.key }), `${c.short}, question ${s.n}: ${s.short}`);
+      // Yes down to the answer
+      arrow(p.cx, p.cy + DH / 2 + 2, p.cx, p.box.y - 4, current, color);
+      label(p.cx + 8, p.cy + DH / 2 + 26, "Yes", current, color, "start");
+      const bg = el("g", {}, gFlow);
+      const b = el("rect", { x: p.box.x, y: p.box.y, width: p.box.w, height: p.box.h, rx: 10 }, bg);
+      b.style.fill = current ? `color-mix(in srgb, ${color} 20%, var(--surface))` : "var(--surface)"; b.style.stroke = current ? color : "var(--line)"; b.style.strokeWidth = current ? "3" : "1.5";
+      const h = el("text", { x: p.box.x + 12, y: p.box.y + 19, class: "fq" }, bg); h.textContent = "DO THIS"; h.style.fill = color;
+      const at = lines(bg, r.ans[i], p.box.x + 12, p.box.y + 37, "ftext", 16); at.style.fill = ink;
+      clickable(bg, () => pick({ kind: "step", id: s.key }), `Answer to ${c.short} question ${s.n}`);
+      // No to the next question / default
+      const nx = i < r.steps.length - 1 ? r.steps[i + 1].cx - DW / 2 - 4 : r.fb.box.x - 4;
+      arrow(p.cx + DW / 2 + 2, p.cy, nx, p.cy, passed || (k === r.steps.length && true), passed || k === r.steps.length ? "var(--ink-soft)" : null);
+      label((p.cx + DW / 2 + nx) / 2, p.cy - 8, "No", false);
+    });
+    // default
+    const f = r.fb, fon = k === c.steps.length;
+    const fg = el("g", {}, gFlow);
+    const fr = el("rect", { x: f.box.x, y: f.box.y, width: f.box.w, height: f.box.h, rx: 10 }, fg);
+    fr.style.fill = fon ? `color-mix(in srgb, ${color} 20%, var(--surface))` : "var(--surface)"; fr.style.stroke = fon ? color : `color-mix(in srgb, ${color} 55%, var(--line))`; fr.style.strokeWidth = fon ? "3" : "1.5"; fr.style.strokeDasharray = "6 4";
+    const fh = el("text", { x: f.box.x + 12, y: f.box.y + 19, class: "fq" }, fg); fh.textContent = "NONE FIRED → DEFAULT"; fh.style.fill = color;
+    const ft = lines(fg, r.ans[r.ans.length - 1], f.box.x + 12, f.box.y + 37, "ftext", 16); ft.style.fill = ink;
+    clickable(fg, () => pick({ kind: "step", id: f.s.key }), `${c.short}: default`);
+  });
+  gFlow.querySelectorAll(".fedge").forEach(e => { if (!e.style.color) e.style.color = "var(--ink-soft)"; });
+}
+
+/* ---------- View: pan, zoom, focus ---------- */
+let view = [0, 0, 1000, 1000], viewTarget = view.slice(), anim = null;
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animate() {
+  if (anim) cancelAnimationFrame(anim);
+  const start = performance.now(), from = view.slice(), dur = reduce ? 0 : 480;
+  function frame(now) {
+    const t = dur ? Math.min(1, (now - start) / dur) : 1, e = 1 - Math.pow(1 - t, 3);
+    view = from.map((v, i) => v + (viewTarget[i] - v) * e);
+    svg.setAttribute("viewBox", view.join(" "));
+    anim = t < 1 ? requestAnimationFrame(frame) : null;
+  }
+  anim = requestAnimationFrame(frame);
+}
+function aspect() { const r = svg.getBoundingClientRect(); return r.width / Math.max(1, r.height); }
+function fitBox(x0, y0, x1, y1) {
+  let w = x1 - x0, h = y1 - y0; const a = aspect();
+  if (w / h < a) w = h * a; else h = w / a;
+  viewTarget = [(x0 + x1) / 2 - w / 2, (y0 + y1) / 2 - h / 2, w, h]; animate();
+}
+function readableWidth() { const r = svg.getBoundingClientRect(); return Math.max(760, Math.min(1250, r.width * 1.3)); }
+function centerOn(x, y, w) { const a = aspect(); w = w || readableWidth(); const h = w / a; viewTarget = [x - w / 2, y - h / 2, w, h]; animate(); }
+function fitStart() { const r = G.rows[CHARTS[1].id]; fitBox(TRUNK - 30, -20, G.top.flags.x + G.top.flags.w + 20, r.bottom); }
+function fitAll() { const [x0, y0, x1, y1] = G.bounds; fitBox(x0, y0, x1, y1); }
+let drag = null;
+svg.addEventListener("pointerdown", e => { if (e.target.closest(".fnode")) return; drag = { x: e.clientX, y: e.clientY, v: view.slice() }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); });
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const rect = svg.getBoundingClientRect(), k = drag.v[2] / rect.width;
+  view = [drag.v[0] - (e.clientX - drag.x) * k, drag.v[1] - (e.clientY - drag.y) * k, drag.v[2], drag.v[3]];
+  viewTarget = view.slice(); svg.setAttribute("viewBox", view.join(" "));
+});
+function endDrag() { drag = null; svg.classList.remove("dragging"); }
+svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const rect = svg.getBoundingClientRect(), f = Math.exp(e.deltaY * 0.0015);
+  const mx = view[0] + (e.clientX - rect.left) / rect.width * view[2], my = view[1] + (e.clientY - rect.top) / rect.height * view[3];
+  const w = Math.min(9000, Math.max(250, view[2] * f)), s = w / view[2];
+  view = [mx - (mx - view[0]) * s, my - (my - view[1]) * s, w, view[3] * s];
+  viewTarget = view.slice(); svg.setAttribute("viewBox", view.join(" "));
+}, { passive: false });
+document.getElementById("fit").addEventListener("click", fitAll);
+document.getElementById("flagsbtn").addEventListener("click", () => pick({ kind: "flags" }));
+document.getElementById("home").addEventListener("click", () => pick({ kind: "root" }));
+window.addEventListener("resize", () => focusSel());
+
+/* ---------- Selection ---------- */
+function focusSel() {
+  if (!sel || sel.kind === "root") return fitStart();
+  if (sel.kind === "routine") { const r = G.top.routine[sel.id]; return centerOn(r.x + r.w / 2, r.y + r.h / 2); }
+  if (sel.kind === "flags") { const f = G.top.flags; return centerOn(f.x, f.y + f.h / 2); }
+  if (sel.kind === "chart") { const r = G.rows[sel.id]; const w = readableWidth(); return centerOn(SX - 60 + w / 2, (r.top + r.bottom) / 2, w); }
+  const s = byKey[sel.id], r = G.rows[s.chart.id];
+  if (s.isDefault) return centerOn(r.fb.box.x + r.fb.box.w / 2, r.midY + 60);
+  const p = r.steps[s.n - 1]; centerOn(p.cx, (p.cy + p.box.y + p.box.h) / 2);
+}
+function pick(next) { sel = next; draw(); focusSel(); renderPanel(); renderCrumbs(); }
+
+/* ---------- Panel ---------- */
+const panel = document.getElementById("panel");
+function rich(s) {
+  return String(s).replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (m, key, lab) => {
+    const g = GLOSSARY[key.toLowerCase()];
+    return g ? `<span class="term" tabindex="0" data-g="${key.toLowerCase()}">${lab || g[0]}</span>` : (lab || key);
+  });
+}
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function renderCrumbs() {
+  const nav = document.getElementById("crumbs"); nav.textContent = "";
+  const add = (txt, fn, cur) => { if (nav.childNodes.length) { const s = document.createElement("span"); s.textContent = "›"; s.setAttribute("aria-hidden", "true"); nav.appendChild(s); } const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.setAttribute("aria-current", cur ? "true" : "false"); b.addEventListener("click", fn); nav.appendChild(b); };
+  const c = selChart();
+  add("Start", () => pick({ kind: "root" }), !sel || sel.kind === "root" || sel.kind === "routine");
+  if (sel && sel.kind === "flags") add("Red flags", () => {}, true);
+  if (c) add(c.short, () => pick({ kind: "chart", id: c.id }), sel.kind === "chart");
+  if (sel && sel.kind === "step") { const s = byKey[sel.id]; add(s.isDefault ? "Default" : "Q" + s.n, () => {}, true); }
+}
+function rootHtml() {
+  const router = CHARTS.map(c => `<button type="button" data-chart="${c.id}"><span>${esc((SIGNALS[c.id] || []).join(" / "))}</span><span class="to" style="color:var(--${c.dom})">${esc(c.short)} →</span></button>`).join("");
+  const flags = FLAGS.map(([say, pref, unless]) => `<tr><td>${esc(say)}</td><td>${esc(pref)}</td><td>${unless ? esc(unless) : "<span class='note'>—</span>"}</td></tr>`).join("");
+  return `
+  <div><div class="eyebrow"><span>Decision map</span><span>Exam guide v1.0</span></div><h2>Find the rule a question is testing</h2></div>
+  <section><p>The chart on the left is one flowchart. Read the question with the five steps, decide what it is about, then follow that row from the left: <b>Yes</b> drops to the answer, <b>No</b> moves right to the next question. If nothing fires, the dashed default applies. Click any box for the reasoning and example exam situations.</p></section>
+  <section><h3>What is it about?</h3><p class="note">Match the signal in the scenario to jump to its row.</p><div class="router">${router}</div></section>
+  <section><h3>The exam in one line</h3><p>60 questions in 120 minutes, some asking you to choose more than one answer (each says how many). Scaled score from 100 to 1,000; 720 passes. 4 of the 6 scenarios appear.</p></section>
+  <section><h3>Red flags</h3><p>${FLAGS.length} phrases that usually mark the wrong option, each with the case where it's right.</p><div class="actions"><button class="btn ghost" type="button" data-flags="1">Open the red flags</button></div></section>
+  <section><h3>Not on the exam</h3><p class="note">If an option depends on one of these, it's probably not the point of the question.</p><div class="chips quiet">${NOT_ON_EXAM.map(x => `<span>${esc(x)}</span>`).join("")}</div></section>`;
+}
+function flagsTable() {
+  const rows = FLAGS.map(([say, pref, unless]) => `<tr><td>${esc(say)}</td><td>${esc(pref)}</td><td>${unless ? esc(unless) : "<span class='note'>—</span>"}</td></tr>`).join("");
+  return `<div class="tablewrap"><table class="flags"><thead><tr><th>If the option says…</th><th>Usually prefer</th><th>Unless…</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function flagsHtml() {
+  return `<div><div class="eyebrow"><span class="chip" style="background:color-mix(in srgb, var(--bad) 18%, var(--track))">Red flags</span><span>Reading step 5</span></div><h2>Phrases that usually mark the wrong option</h2></div>
+  <section><p>Cross these out first, then choose between what's left. Each has a boundary where it is the right answer, so check the last column before you cross it out.</p></section>
+  ${flagsTable()}
+  <div class="actions"><button class="btn" type="button" data-root="1">What is it about? →</button></div>`;
+}
+function routineHtml(i) {
+  const [t, d] = ROUTINE[i];
+  return `<div><div class="eyebrow"><span class="chip">Step ${i + 1} of ${ROUTINE.length}</span><span>Before every question</span></div><h2>${esc(t)}</h2></div>
+  <section><p>${rich(d)}</p></section>
+  ${i === ROUTINE.length - 1 ? `<section><h3>Red flags</h3>${flagsTable()}</section>` : ""}
+  <div class="actions">${i > 0 ? `<button class="btn ghost" type="button" data-routine="${i - 1}">← Step ${i}</button>` : ""}${i < ROUTINE.length - 1 ? `<button class="btn" type="button" data-routine="${i + 1}">Step ${i + 2} →</button>` : `<button class="btn" type="button" data-root="1">What is it about? →</button>`}</div>`;
+}
+function stepLink(s) { return `<button type="button" data-step="${s.key}"><span class="n">${s.isDefault ? "Default" : "Q" + s.n}</span><span>${esc(s.isDefault ? "None of the questions fired" : plain(s.q))}</span></button>`; }
+function chartHtml(c) {
+  return `<div><div class="eyebrow"><span class="chip" style="background:color-mix(in srgb, var(--${c.dom}) 18%, var(--track))">${c.dom.toUpperCase()} ${DOMAINS[c.dom]}</span>${taskSpans(c.tasks)}</div><h2>${esc(c.name)}</h2></div>
+  <section><p><b>Signal:</b> ${esc((SIGNALS[c.id] || []).join(" / "))}.</p><p class="note">${esc(c.start)} Ask the questions in order; the first Yes is your answer.</p></section>
+  ${c.guide ? `<section class="drift"><b>From the exam guide</b>${esc(c.guide)}</section>` : ""}
+  <section><h3>The questions</h3><div class="tasklist">${[...c.steps, c.fallback].map(stepLink).join("")}</div></section>
+  <section><h3>Looks right, isn't</h3><ul>${c.traps.map(t => `<li>${rich(t)}</li>`).join("")}</ul>${c.test ? `<p class="note" style="margin-top:8px">${esc(c.test)}</p>` : ""}</section>`;
+}
+function stepHtml(s) {
+  const c = s.chart, all = [...c.steps, c.fallback], i = all.indexOf(s), prev = all[i - 1], next = all[i + 1];
+  const ex = EXAMPLES[s.key] || [];
+  return `<div><div class="eyebrow"><span class="chip" style="background:color-mix(in srgb, var(--${c.dom}) 18%, var(--track))">${esc(c.short)}</span><span>${c.dom.toUpperCase()} ${DOMAINS[c.dom]}</span><span>${s.isDefault ? "Default" : "Question " + s.n + " of " + c.steps.length}</span>${taskSpans(s.tags)}</div>
+  <h2>${s.isDefault ? "None of the questions fired" : rich(s.q)}</h2></div>
+  <div class="outcome" style="--c:var(--${c.dom})"><div class="eyebrow"><span class="chip">${s.isDefault ? "Default" : "Yes → do this"}</span></div><p class="answer">${rich(s.a)}</p>${s.why ? `<p class="why">${rich(s.why)}</p>` : ""}</div>
+  ${ex.length ? `<section><h3>Exam situations that land here</h3><ul class="examples">${ex.map(e => `<li>${esc(e)}</li>`).join("")}</ul></section>` : ""}
+  <div class="actions">${prev ? `<button class="btn ghost" type="button" data-step="${prev.key}">← Q${prev.n}</button>` : ""}${next ? `<button class="btn" type="button" data-step="${next.key}">No → ${next.isDefault ? "Default" : "Q" + next.n}</button>` : ""}<button class="btn ghost" type="button" data-chart="${c.id}">All of ${esc(c.short)}</button></div>`;
+}
+function renderPanel() {
+  let h;
+  if (!sel || sel.kind === "root") h = rootHtml();
+  else if (sel.kind === "routine") h = routineHtml(sel.id);
+  else if (sel.kind === "flags") h = flagsHtml();
+  else if (sel.kind === "chart") h = chartHtml(CHARTS.find(c => c.id === sel.id));
+  else h = stepHtml(byKey[sel.id]);
+  panel.innerHTML = `<div class="panel-inner">${h}</div>`; panel.scrollTop = 0;
+  panel.querySelectorAll("[data-chart]").forEach(b => b.addEventListener("click", () => pick({ kind: "chart", id: b.dataset.chart })));
+  panel.querySelectorAll("[data-step]").forEach(b => b.addEventListener("click", () => pick({ kind: "step", id: b.dataset.step })));
+  panel.querySelectorAll("[data-routine]").forEach(b => b.addEventListener("click", () => pick({ kind: "routine", id: +b.dataset.routine })));
+  panel.querySelectorAll("[data-flags]").forEach(b => b.addEventListener("click", () => pick({ kind: "flags" })));
+  panel.querySelectorAll("[data-root]").forEach(b => b.addEventListener("click", () => pick({ kind: "root" })));
+}
+
+/* ---------- Glossary tooltip ---------- */
+const tip = document.getElementById("tip");
+function showTip(t) {
+  const g = GLOSSARY[t.dataset.g]; if (!g) return;
+  tip.innerHTML = `<b>${esc(g[0])}</b>${esc(g[1])}`; tip.hidden = false;
+  const r = t.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = Math.min(window.innerWidth - tw - 8, Math.max(8, r.left + r.width / 2 - tw / 2)), y = r.top - th - 8; if (y < 8) y = r.bottom + 8;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+document.addEventListener("mouseover", e => { const t = e.target.closest(".term"); if (t) showTip(t); });
+document.addEventListener("mouseout", e => { if (e.target.closest(".term")) tip.hidden = true; });
+document.addEventListener("focusin", e => { const t = e.target.closest(".term"); if (t) showTip(t); });
+document.addEventListener("focusout", e => { if (e.target.closest(".term")) tip.hidden = true; });
+panel.addEventListener("scroll", () => { tip.hidden = true; });
+
+computeLayout();
+draw();
+const vb = G.bounds; view = [vb[0], vb[1], vb[2] - vb[0], vb[3] - vb[1]]; svg.setAttribute("viewBox", view.join(" "));
+pick({ kind: "root" });
+
+/* ---------- Resizable panel ---------- */
+(function () {
+  const app = document.querySelector(".app"), stage = document.querySelector(".stage"), KEY = "ccaf-map-panel-width";
+  const h = document.createElement("div");
+  h.className = "panel-handle"; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "vertical");
+  h.setAttribute("aria-label", "Resize the panel. Drag, or use the left and right arrow keys. Double-click to reset.");
+  stage.appendChild(h);
+  const clamp = w => Math.max(300, Math.min(w, window.innerWidth * 0.75));
+  const refit = () => window.dispatchEvent(new Event("resize"));
+  function setW(w, store) {
+    if (w == null) app.style.removeProperty("--panel-w"); else app.style.setProperty("--panel-w", Math.round(clamp(w)) + "px");
+    if (store) { try { w == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, String(Math.round(clamp(w)))); } catch (e) {} }
+  }
+  try { const saved = +localStorage.getItem(KEY); if (saved) setW(saved, false); } catch (e) {}
+  let drag = null;
+  h.addEventListener("pointerdown", e => { drag = true; h.setPointerCapture(e.pointerId); h.classList.add("dragging"); document.body.classList.add("resizing"); e.preventDefault(); });
+  h.addEventListener("pointermove", e => { if (drag) setW(window.innerWidth - e.clientX, false); });
+  function end() { if (!drag) return; drag = null; h.classList.remove("dragging"); document.body.classList.remove("resizing"); setW(document.querySelector(".panel").getBoundingClientRect().width, true); refit(); }
+  h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  h.addEventListener("dblclick", () => { setW(null, true); refit(); });
+  h.addEventListener("keydown", e => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const cur = document.querySelector(".panel").getBoundingClientRect().width;
+    setW(cur + (e.key === "ArrowLeft" ? 32 : -32), true); refit();
+  });
+})();
+
+/* ---------- Resizable map height (narrow layout: map on top, panel below) ---------- */
+(function () {
+  const app = document.querySelector(".app"), stage = document.querySelector(".stage"), KEY = "ccaf-map-height";
+  const h = document.createElement("div");
+  h.className = "stage-handle"; h.tabIndex = 0; h.setAttribute("role", "separator"); h.setAttribute("aria-orientation", "horizontal");
+  h.setAttribute("aria-label", "Resize the map. Drag, or use the up and down arrow keys. Double-click to reset.");
+  stage.appendChild(h);
+  const clamp = v => Math.max(160, Math.min(v, window.innerHeight * 0.85));
+  const refit = () => window.dispatchEvent(new Event("resize"));
+  function setH(v, store) {
+    if (v == null) app.style.removeProperty("--map-h"); else app.style.setProperty("--map-h", Math.round(clamp(v)) + "px");
+    if (store) { try { v == null ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, String(Math.round(clamp(v)))); } catch (e) {} }
+  }
+  try { const saved = +localStorage.getItem(KEY); if (saved) setH(saved, false); } catch (e) {}
+  let drag = false;
+  h.addEventListener("pointerdown", e => { drag = true; h.setPointerCapture(e.pointerId); h.classList.add("dragging"); document.body.classList.add("resizing-v"); e.preventDefault(); });
+  h.addEventListener("pointermove", e => { if (drag) setH(e.clientY - stage.getBoundingClientRect().top, false); });
+  function end() { if (!drag) return; drag = false; h.classList.remove("dragging"); document.body.classList.remove("resizing-v"); setH(stage.getBoundingClientRect().height, true); refit(); }
+  h.addEventListener("pointerup", end); h.addEventListener("pointercancel", end);
+  h.addEventListener("dblclick", () => { setH(null, true); refit(); });
+  h.addEventListener("keydown", e => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    setH(stage.getBoundingClientRect().height + (e.key === "ArrowDown" ? 32 : -32), true); refit();
+  });
+})();
+</script>
+</body>
+</html>

@@ -69,3 +69,12 @@ Only count real quiz answers (examination or a quiz inside tutoring). Explanatio
 ## Suggesting the next step
 
 The map shows a "Your path" list. When the learner asks what to do next, match it: the first lesson on their path they haven't read, or a Richard quiz on a topic they've read but not yet checked. Name the place they'll find it: "In your map: Basics → B4 JSON."
+
+## The decision map
+
+A second page, `{project-root}/decision-map/ccaf-decision-map.html`, is guidance for exam-day reasoning, not a study tracker. It is one flowchart: a new question → five reading steps → "What is this question about?" → twelve situations, each a row of questions where Yes leads to the answer and No to the next question, ending in a default. Every answer has two example exam situations. It stores nothing: no progress, no misses, no quizzes (those belong in the study map and in Richard's sessions).
+
+- **Offer it** once the learner has read some domain lessons or starts practice exams: *"There's a decision flowchart for exam-day reasoning. Want it next to the chat?"*
+- **Publish**: `python {skill-root}/scripts/build-map-artifact.py {project-root} decision`, then the Artifact tool with `icon: "map"`, `description: "The CCAF exam's rules as one flowchart: from “what is this question about?” to the answer, with example exam situations."` and **no** `capabilities`. Save the URL and `map_version` in `BOND.md` → **Decision map**; republish when the repo's `MAP_VERSION` in that file is newer.
+- **The switch.** Both maps have a Study map | Decision map switch in the top bar. The build script points it at the learner's own published copy of the other map, using the URLs in `BOND.md`; if the other map isn't published yet, the switch is left out. So after publishing a map for the first time, rebuild and republish the other one too, so its switch appears.
+- **When a learner misses a question**, you can point to the exact place: "Decision map → Escalation → Q3".
