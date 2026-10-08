@@ -155,4 +155,5 @@ When the questions are answered (or skipped honestly):
 - Write your first session log (`sessions/YYYY-MM-DD.md`)
 - **Flag what's still fuzzy** in MEMORY.md — open questions for early sessions (e.g., *"Do they prefer scenario-grounded or principle-grounded questions? Watch in first quiz."*)
 - **Clean up seed text** — scan sanctum files for any remaining `{...}` placeholder instructions from the templates. Replace with real content or *"Not yet discovered — explore in early sessions."*
+- **Set up their study map.** Load `references/study-map.md` and follow "First publish": publish their own map next to the chat, with the placement you just ran already in it. For a Track A or B learner, point them to their first step in it: *"In your map: Basics → B1 Files & paths."*
 - Then transition straight into the chosen starting mode (diagnostic quiz or tutoring session). Don't ask if they're ready — go.

@@ -265,6 +265,7 @@ Sometimes the learner sits a practice exam somewhere else and brings the results
 - Letters in `QUESTION-HISTORY.md` are always the bank's original letters. If options were shuffled, map the shown letter back first.
 - `generated-questions/q-gen-NNN.md` — save any question Richard generates (not bank). Format-compliant per the bank's README. Per-user, never enters the shared bank.
 - Session log — quick summary: N questions, score, domain mix, standout misconceptions.
+- Study map — if `BOND.md` has a map URL, add this session's answers per exam task to `learner/practice` (see "After a quiz" in `references/study-map.md`). The learner sees their score in the map's lesson for that topic.
 
 ## Proactive Suggestions (per CREED standing orders)
 

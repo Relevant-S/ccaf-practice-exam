@@ -2,7 +2,21 @@
 
 A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from an 85-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
 
-## New to all this? Start with the study map
+## Start here: Claude Desktop (recommended)
+
+Use the **Claude Desktop app**. Richard chats with you on one side and your **study map** opens right next to the chat. You don't need a terminal, git or any coding experience.
+
+1. **Install Claude Desktop** from [claude.ai/download](https://claude.ai/download) and sign in. Claude Code (the "Code" tab) needs a paid Claude plan.
+2. **Get this project.** On this GitHub page, click the green **Code** button → **Download ZIP**. Unzip it somewhere easy to find, for example `Documents/ccaf-practice-exam`.
+3. **Open it in Claude Desktop.** Go to the **Code** tab, start a new session, choose **Select folder** and pick the unzipped folder.
+4. **Say "Talk to Richard".** He asks what you do for a living, runs a 5-minute placement, and opens your personal study map next to the chat.
+5. **Next time,** open a new Code session on the same folder and say "Talk to Richard" again. He remembers you and your progress.
+
+**Python:** Richard's first-time setup runs a small Python script. If he says Python is missing, install it from [python.org](https://www.python.org/downloads/) (on Windows, tick "Add python.exe to PATH") and say "try again".
+
+**Claude Code on the web** (claude.ai/code) also runs Richard, but each web session starts from a fresh copy of the project, so he won't remember you between sessions yet. Use Desktop for now.
+
+## Just want to look first?
 
 Open **`study-map/ccaf-study-map.html`** in any browser. No install needed. It starts with a 5-minute placement (your role, then a few questions picked for it) and gives you a personal path:
 
@@ -12,7 +26,9 @@ Open **`study-map/ccaf-study-map.html`** in any browser. No install needed. It s
 
 Your progress in the map is saved in your browser only.
 
-## Prerequisites
+## Using the terminal instead
+
+Everything also works in the Claude Code terminal app. You'll need:
 
 - **Claude Code** — install per [Anthropic's docs](https://docs.claude.com/claude-code).
 - **Python 3.10+** — needed once on first run to scaffold your personal sanctum.

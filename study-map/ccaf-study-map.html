@@ -199,7 +199,7 @@ details.case.flash { animation: flash 1.2s ease-out; }
     <div class="legend" aria-label="Legend">
       <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2"/></svg>Topic inside a topic</div>
       <div class="row"><svg width="36" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="currentColor" stroke-width="2" stroke-dasharray="3 5"/></svg>Case or scenario linked to it</div>
-      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-pie"></svg>Ring fills as you go: read · cases · self-check</div>
+      <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-pie"></svg>Ring fills as you go: read · cases · check</div>
       <div class="row"><svg width="36" height="18" viewBox="-9 -9 18 18" aria-hidden="true" id="legend-done"></svg>Solid with ✓: done</div>
     </div>
   </div>
@@ -648,10 +648,25 @@ const TRACKS = {
 };
 
 /* ---------- State ---------- */
+// Bump when the page changes, so Richard knows to republish a learner's copy.
+const MAP_VERSION = "2026-10-08";
 const STORE_KEY = "ccaf-study-map-v1";
 let progress = { read: {}, cases: {}, checks: {}, profile: null, skipped: false };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
-function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {} }
+/* When the map runs as the learner's own published page, progress also goes to
+   the page's database, where Richard can read it. Richard writes two documents:
+   learner/placement (a placement done in chat) and learner/practice (quiz results). */
+let remote = null, pushTimer = null, practice = {};
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
+  if (!remote) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    const body = JSON.parse(JSON.stringify(progress));
+    body.updatedAt = new Date().toISOString(); body.mapVersion = MAP_VERSION;
+    remote.doc("learner/progress").set(body).catch(() => {});
+  }, 600);
+}
 
 const byId = {};
 const root = { id: "root", kind: "root", name: "CCAF exam", short: "CCAF" };
@@ -671,7 +686,9 @@ let firstAnswer = {};
 function taskParts(t) {
   const read = progress.read[t.id] ? 1 : 0;
   const cases = t.cases.filter(c => progress.cases[c.id]).length / t.cases.length;
-  const checks = t.checks.filter(k => progress.checks[k.id]).length / t.checks.length;
+  let checks = t.checks.filter(k => progress.checks[k.id]).length / t.checks.length;
+  const pr = practice[t.code];
+  if (pr && pr.answered >= 3 && pr.correct / pr.answered >= 0.8) checks = 1;
   return [read, cases, checks];
 }
 function domainParts(d) {
@@ -1008,7 +1025,7 @@ function rootHtml() {
   <section><h3>How to use this map</h3><ul>
     <li>New to software development? Start with the <b>Basics</b> bubble at the top. It teaches the words the questions take for granted.</li>
     <li>Click a bubble to open it. Solid lines lead to the topics inside it. Dotted lines lead to scenarios and worked cases.</li>
-    <li>The ring around each bubble fills in three parts: lesson read, cases opened, self-check passed. When all three are done, the bubble turns solid with a ✓.</li>
+    <li>The ring around each bubble fills in three parts: lesson read, cases opened, self-check passed. When all three are done, the bubble turns solid with a ✓. The check part also completes when you score 80% or more with Richard on that topic.</li>
     <li>Hover or tap any <span class="term" tabindex="0" data-g="distractor">dotted word</span> for a plain definition.</li>
     <li>When a topic feels clear, ask Richard, the tutor in this repo, to quiz you on it. Each lesson has a ready prompt.</li>
   </ul></section>
@@ -1070,6 +1087,7 @@ function taskHtml(t) {
   <section><div class="actions"><button class="btn" type="button" id="mark-read" aria-pressed="${read}">${read ? "Lesson read ✓" : "Mark lesson as read"}</button></div></section>
   <section><h3>${isBasic ? "How it shows up in a question" : "Worked cases"}</h3><p class="note">${isBasic ? "A typical exam situation where this word decides the answer." : "Each case is drawn from one of the six exam scenarios (S1–S6). Open one to see the tempting move and what actually works."}</p>${cases}</section>
   <section><h3>Check yourself</h3><p class="note">Your first answer counts toward the ring. These are not the practice-exam questions, so they won't spoil Richard's quizzes.</p>${checks}</section>
+  ${isBasic ? "" : `<section><h3>Your practice with Richard</h3><p id="practice-line">${practiceLine(t)}</p></section>`}
   <section><h3>Practise with Richard</h3><p class="note">Copy this into Claude Code in the ccaf repo:</p><textarea class="copybox" id="prompt" rows="2" readonly>${esc(prompt)}</textarea><div class="actions"><button class="btn ghost" type="button" id="copy">Copy prompt</button></div></section>
   ${usedIn.length ? `<section><h3>Used in these topics</h3><div class="chips">${usedIn.map(chip).join("")}</div></section>` : ""}
   ${docs ? `<section><h3>Go deeper</h3><ul>${docs}</ul></section>` : ""}`;
@@ -1191,7 +1209,7 @@ function place() {
   const devish = onb.role === "dev" || onb.role === "ops";
   let track = gaps.length <= 2 ? "B" : "A";
   if (devish && (onb.exp.includes("e_cc") || onb.exp.includes("e_sdk")) && concepts >= 3 && gaps.length <= 1) track = "C";
-  return { role: onb.role, exp: onb.exp, gaps, track, concepts, date: new Date().toISOString().slice(0, 10) };
+  return { role: onb.role, exp: onb.exp, gaps, track, concepts, date: new Date().toISOString().slice(0, 10), at: new Date().toISOString(), source: "map" };
 }
 function openOnboarding() { onb = { step: "role", role: null, exp: [], probes: [], i: 0, answers: {}, result: null }; onbEl.hidden = false; drawOnb(); }
 function closeOnboarding(skipped) { onbEl.hidden = true; if (skipped && !progress.profile) { progress.skipped = true; save(); } if (progress.profile) { render(); renderPanel(); } }
@@ -1227,9 +1245,9 @@ function drawOnb() {
     h = `<div class="onb-steps">Your starting point</div><h2 id="onb-title"><span class="track">Track ${r.track}</span> ${TRACKS[r.track][0]}</h2>
       <p>${TRACKS[r.track][1]}</p>
       <div><h3 style="margin:0 0 6px;font:700 1rem var(--font-display)">Basics to strengthen</h3>${gaps}</div>
-      <div><h3 style="margin:0 0 6px;font:700 1rem var(--font-display)">Tell Richard</h3><p class="note">Paste this into Claude Code in the ccaf repo, so the tutor starts at your level:</p>
+      ${remote ? `<div class="plain"><b>Richard can see this.</b> Your result is saved with your map, so the tutor reads it on his own. Just say “Talk to Richard” in the chat.</div>` : `<div><h3 style="margin:0 0 6px;font:700 1rem var(--font-display)">Tell Richard</h3><p class="note">Paste this into Claude Code in the ccaf repo, so the tutor starts at your level:</p>
       <textarea class="copybox" id="onb-prompt" rows="4" readonly>${esc(richardPrompt(r))}</textarea>
-      <div class="actions" style="margin-top:6px"><button type="button" class="btn ghost" id="onb-copy">Copy prompt</button></div></div>
+      <div class="actions" style="margin-top:6px"><button type="button" class="btn ghost" id="onb-copy">Copy prompt</button></div></div>`}
       <div class="onb-foot"><button type="button" class="linkbtn" data-back="role">Start over</button><button type="button" class="btn" data-done="1">Show my path</button></div>`;
   }
   onbCard.innerHTML = h;
@@ -1266,9 +1284,60 @@ panel.addEventListener("click", e => { if (e.target.closest("[data-onb]")) openO
   const c = el("circle", { r: 5.6 }, g); c.style.fill = "var(--d3)";
 })();
 
+function practiceLine(t) {
+  const pr = practice[t.code];
+  if (!pr || !pr.answered) return remote ? "No quiz results yet. When Richard quizzes you on this topic, your score shows up here." : "Quiz results from Richard show up here when the map is opened as your own published page.";
+  const pass = pr.answered >= 3 && pr.correct / pr.answered >= 0.8;
+  return `${pr.correct} of ${pr.answered} right${pr.last ? ` · last on ${esc(pr.last)}` : ""}.${pass ? " That counts as the check part of the ring." : " 80% over at least 3 questions completes the ring's check part."}`;
+}
+function adoptPlacement(d) {
+  if (!d || !d.track) return false;
+  const mine = progress.profile;
+  if (mine && mine.at && d.at && mine.at >= d.at) return false;
+  if (mine && !d.at) return false;
+  progress.profile = { role: d.role || "other", exp: d.exp || [], gaps: d.gaps || [], track: d.track, concepts: d.concepts || 0, date: d.date || "", at: d.at || "", source: d.source || "richard" };
+  progress.skipped = false;
+  save();
+  return true;
+}
+async function connectStore() {
+  if (!window.claude || !window.claude.use) return false;
+  let db = null;
+  try { db = await window.claude.use("db"); } catch (e) { db = null; }
+  if (!db) return false;
+  remote = db;
+  try {
+    const snap = await db.doc("learner/progress").get();
+    if (snap.exists) {
+      const d = snap.data() || {};
+      progress = { read: d.read || {}, cases: d.cases || {}, checks: d.checks || {}, profile: d.profile || null, skipped: !!d.skipped };
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
+    } else if (progress.profile || Object.keys(progress.read).length) {
+      save();
+    }
+  } catch (e) {}
+  db.doc("learner/practice").onSnapshot(snap => {
+    practice = snap.exists ? ((snap.data() || {}).tasks || {}) : {};
+    paintAll();
+    const pl = panel.querySelector("#practice-line");
+    if (pl && byId[focus].kind === "task") pl.textContent = practiceLine(byId[focus]);
+  }, () => {});
+  db.doc("learner/placement").onSnapshot(snap => {
+    if (snap.exists && adoptPlacement(snap.data())) {
+      if (!onbEl.hidden) onbEl.hidden = true;
+      render(); renderPanel();
+    }
+  }, () => {});
+  return true;
+}
+
 render();
 renderPanel();
-if (!progress.profile && !progress.skipped) openOnboarding();
+(async () => {
+  const connected = await Promise.race([connectStore(), new Promise(r => setTimeout(() => r(false), 4000))]);
+  if (connected) { render(); renderPanel(); }
+  if (!progress.profile && !progress.skipped) openOnboarding();
+})();
 </script>
 </body>
 </html>

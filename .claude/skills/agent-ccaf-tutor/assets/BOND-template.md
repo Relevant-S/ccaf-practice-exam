@@ -24,6 +24,14 @@ _From the placement in First Breath or the study map (see `assets/placement.md`)
 - **Placement:** {date, and source: first-breath or map}
 - **Track C only, production vs docs per technology:** {Claude Code / API / Agent SDK / MCP}
 
+## Study Map
+
+_The learner's own published study map (see `references/study-map.md`). Empty until it's set up._
+
+- **URL:** {not set up yet}
+- **map_version:** {version published}
+- **Published:** {date}
+
 ## Learning Style
 
 _How they learn best. Update through observation as well as initial answer — observed behavior overrides stated preference if they conflict._
