@@ -1875,7 +1875,7 @@ const TRACKS = {
 
 /* ---------- State ---------- */
 // Bump when the page changes, so Richard knows to republish a learner's copy.
-const MAP_VERSION = "2026-10-08c";
+const MAP_VERSION = "2026-10-08h";
 const STORE_KEY = "ccaf-study-map-v1";
 let progress = { read: {}, cases: {}, checks: {}, profile: null, skipped: false };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
@@ -1883,15 +1883,50 @@ try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.as
    the page's database, where Richard can read it. Richard writes two documents:
    learner/placement (a placement done in chat) and learner/practice (quiz results). */
 let remote = null, pushTimer = null, practice = {};
-function save() {
+/* The map can be open in several places at once (chat panel, browser tab, another device).
+   Small changes (a lesson read, a case opened, a check passed) are sent as a patch that
+   merges into the stored document, so one copy never wipes out another copy's marks.
+   Every copy also listens to the stored document and picks up the others' changes.
+   Whole-document writes are kept for the few places that replace everything (placement, reset). */
+let pendingPatch = null, fullWrite = false, writeChain = Promise.resolve();
+/* Each write carries a writeId. A snapshot that echoes one of this copy's older writes is stale
+   (a newer write is on its way) and is skipped; changes not yet confirmed stay applied on top. */
+let inflight = null, lastWriteId = null;
+const sentIds = new Set();
+function mergePatch(into, patch) {
+  Object.keys(patch).forEach(k => {
+    const v = patch[k];
+    if (v && typeof v === "object" && !Array.isArray(v)) into[k] = Object.assign({}, into[k] || {}, v);
+    else into[k] = v;
+  });
+  return into;
+}
+function save(patch) {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
   if (!remote) return;
+  if (patch) pendingPatch = mergePatch(pendingPatch || {}, patch); else fullWrite = true;
   clearTimeout(pushTimer);
-  pushTimer = setTimeout(() => {
-    const body = JSON.parse(JSON.stringify(progress));
-    body.updatedAt = new Date().toISOString(); body.mapVersion = MAP_VERSION;
-    remote.doc("learner/progress").set(body).catch(() => {});
-  }, 600);
+  pushTimer = setTimeout(flush, 600);
+}
+function flush() {
+  const writeId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const ref = remote.doc("learner/progress"), stamp = { updatedAt: new Date().toISOString(), mapVersion: MAP_VERSION, writeId };
+  const whole = fullWrite, patch = pendingPatch;
+  fullWrite = false; pendingPatch = null;
+  sentIds.add(writeId); lastWriteId = writeId;
+  if (patch) inflight = mergePatch(inflight || {}, patch);
+  const full = () => ref.set(Object.assign(JSON.parse(JSON.stringify(progress)), stamp));
+  writeChain = writeChain.then(() => whole ? full() : patch ? ref.update(Object.assign({}, patch, stamp)).catch(full) : null).catch(() => {});
+}
+function applyRemote(d) {
+  if (fullWrite) return; // a whole-document write (placement, reset) is on its way; this copy is the newest
+  if (d.writeId && sentIds.has(d.writeId) && d.writeId !== lastWriteId) return; // late echo of an older write from this copy
+  if (d.writeId && d.writeId === lastWriteId) inflight = null; // the store has caught up with everything this copy sent
+  d = JSON.parse(JSON.stringify(d)); // stored data arrives read-only; work on an editable copy, or later clicks silently fail
+  progress = { read: d.read || {}, cases: d.cases || {}, checks: d.checks || {}, profile: d.profile || null, skipped: !!d.skipped };
+  if (inflight) mergePatch(progress, inflight);
+  if (pendingPatch) mergePatch(progress, pendingPatch);
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
 }
 
 const byId = {};
@@ -2207,7 +2242,7 @@ function activate(id) {
   }
   render(); renderPanel();
 }
-function markCase(id) { if (!progress.cases[id]) { progress.cases[id] = true; save(); } }
+function markCase(id) { if (!progress.cases[id]) { progress.cases[id] = true; save({ cases: { [id]: true } }); } }
 function renderCrumbs() {
   const nav = document.getElementById("crumbs"); nav.textContent = "";
   const chain = []; let n = byId[focus];
@@ -2339,7 +2374,7 @@ function wirePanel(n) {
   panel.querySelectorAll("details.case").forEach(d => d.addEventListener("toggle", () => { if (d.open) { markCase(d.dataset.case); paintAll(); } }));
   const mr = panel.querySelector("#mark-read");
   if (mr) mr.addEventListener("click", () => {
-    progress.read[n.id] = !progress.read[n.id]; save();
+    progress.read[n.id] = !progress.read[n.id]; save({ read: { [n.id]: progress.read[n.id] } });
     mr.setAttribute("aria-pressed", String(!!progress.read[n.id])); mr.textContent = progress.read[n.id] ? "Lesson read ✓" : "Mark lesson as read"; paintAll();
   });
   const cp = panel.querySelector("#copy");
@@ -2355,7 +2390,7 @@ function wirePanel(n) {
     if (prior !== null) showResult(box, k, prior);
     box.querySelectorAll(".opts button").forEach(b => b.addEventListener("click", () => {
       const i = +b.dataset.i;
-      if (!(k.id in firstAnswer) && !progress.checks[k.id]) { firstAnswer[k.id] = i; if (i === k.a) { progress.checks[k.id] = true; save(); paintAll(); } }
+      if (!(k.id in firstAnswer) && !progress.checks[k.id]) { firstAnswer[k.id] = i; if (i === k.a) { progress.checks[k.id] = true; save({ checks: { [k.id]: true } }); paintAll(); } }
       showResult(box, k, i);
     }));
   });
@@ -2560,10 +2595,11 @@ function practiceLine(t) {
 }
 function adoptPlacement(d) {
   if (!d || !d.track) return false;
+  d = JSON.parse(JSON.stringify(d));
   const mine = progress.profile;
   if (mine && mine.at && d.at && mine.at >= d.at) return false;
   if (mine && !d.at) return false;
-  progress.profile = { role: d.role || "other", exp: d.exp || [], gaps: d.gaps || [], track: d.track, concepts: d.concepts || 0, date: d.date || "", at: d.at || "", source: d.source || "richard" };
+  progress.profile = { role: d.role || "other", exp: d.exp || [], gaps: d.gaps || [], track: d.track, concepts: d.concepts || 0, plan: d.plan || (mine && mine.plan) || null, date: d.date || "", at: d.at || "", source: d.source || "richard" };
   progress.skipped = false;
   save();
   return true;
@@ -2577,13 +2613,19 @@ async function connectStore() {
   try {
     const snap = await db.doc("learner/progress").get();
     if (snap.exists) {
-      const d = snap.data() || {};
-      progress = { read: d.read || {}, cases: d.cases || {}, checks: d.checks || {}, profile: d.profile || null, skipped: !!d.skipped };
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
+      applyRemote(snap.data() || {});
     } else if (progress.profile || Object.keys(progress.read).length) {
       save();
     }
   } catch (e) {}
+  db.doc("learner/progress").onSnapshot(snap => {
+    if (!snap.exists) return;
+    applyRemote(snap.data() || {});
+    paintAll();
+    const n = byId[focus], mr = panel.querySelector("#mark-read");
+    if (n.kind === "task" && mr) { const r = !!progress.read[n.id]; mr.setAttribute("aria-pressed", String(r)); mr.textContent = r ? "Lesson read ✓" : "Mark lesson as read"; }
+    else if (n.kind !== "task") renderPanel();
+  }, () => {});
   db.doc("learner/practice").onSnapshot(snap => {
     practice = snap.exists ? ((snap.data() || {}).tasks || {}) : {};
     paintAll();
