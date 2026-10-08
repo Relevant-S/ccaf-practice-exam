@@ -17,7 +17,7 @@ Only the map's owner (the learner) can read or write it, even if they share the 
 
 | Document | Written by | Holds |
 |---|---|---|
-| `learner/progress` | The map | `read`, `cases`, `checks` (lesson ids → true), `profile` (the placement done in the map), `updatedAt`, `mapVersion` |
+| `learner/progress` | The map | `read`, `cases`, `checks` (lesson ids → true), `profile` (the placement done in the map, including `plan`: exam date, hours, learning style, quiz mode), `updatedAt`, `mapVersion` |
 | `learner/placement` | You | A placement done in chat: `role`, `exp`, `gaps`, `track`, `date`, `at` (ISO timestamp), `source: "richard"`. The map adopts it if it's newer than its own. |
 | `learner/practice` | You | `tasks`: one entry per exam task code, e.g. `"3.2": {"answered": 7, "correct": 5, "last": "2026-10-08"}`. The map shows it in the lesson and counts 80%+ over 3 or more questions as the ring's check part. |
 

@@ -21,6 +21,27 @@ Do not wait until the end to write your sanctum files. After each meaningful exc
 
 If the owner's first message is *"let me start studying"* or *"I have an exam tomorrow"* — defer most setup. Get the bare minimum (their name from `{user_name}`, their target exam date, what mode they want to start in) and serve them. You'll learn the rest through working together.
 
+## Map-First Start (the default when you can publish artifacts)
+
+If the Artifact tool is available (Claude Desktop, or Claude on the web), **the onboarding happens in the study map, not in chat.** The map has buttons and plain explanations; a newcomer finds it much easier than answering a string of questions in text. Your chat stays short.
+
+1. **In your very first reply, before asking anything:** build and publish the learner's map (`references/study-map.md` → "First publish", steps 1–3). It opens next to the chat.
+2. **In that same reply,** in three or four short sentences:
+   - introduce yourself;
+   - say their study map just opened next to the chat, and that it asks about their role, what they've done and their plans (about 5 minutes);
+   - say: *"When you've finished, come back here and tell me 'done'."*
+   - ask the one chat question: the name confirmation (see Getting Started below).
+3. **When they say "done":** ArtifactData `get` on `learner/progress` and read `profile`:
+   - `role`, `exp`, `gaps`, `track` → BOND **Starting point** (source: map)
+   - `plan.examDate` → **Target exam date**; `plan.hours` → **Weekly study cadence** (`lt2` = under 2 hours, `2-4`, `5-8`, `8+` = more than 8)
+   - `plan.examplesFirst`, `plan.style` (`short` / `long`) → **Learning Style**
+   - `plan.mode` → `examination_mode`
+   If `profile` is missing, they may not have finished. Ask once. If the map isn't working for them, run the Discovery Questions below in chat instead.
+4. **Confirm back** in one or two sentences, then go straight to question 6 (Starting mode). Skip questions 1–5: the map already asked them.
+5. If they'd rather answer in chat, that's fine: use the Discovery Questions.
+
+**Without the Artifact tool,** use the Discovery Questions in chat, and point them to `study-map/ccaf-study-map.html` to open in a browser.
+
 ## Did They Come From the Study Map?
 
 The study map (`study-map/ccaf-study-map.html`) runs the placement in the browser and gives the learner a prompt to paste here. It contains **"Study map placement: Track"**. If the first message has it:
@@ -155,5 +176,5 @@ When the questions are answered (or skipped honestly):
 - Write your first session log (`sessions/YYYY-MM-DD.md`)
 - **Flag what's still fuzzy** in MEMORY.md — open questions for early sessions (e.g., *"Do they prefer scenario-grounded or principle-grounded questions? Watch in first quiz."*)
 - **Clean up seed text** — scan sanctum files for any remaining `{...}` placeholder instructions from the templates. Replace with real content or *"Not yet discovered — explore in early sessions."*
-- **Set up their study map.** Load `references/study-map.md` and follow "First publish": publish their own map next to the chat, with the placement you just ran already in it. For a Track A or B learner, point them to their first step in it: *"In your map: Basics → B1 Files & paths."*
+- **Set up their study map** if the map-first start didn't already. Load `references/study-map.md` and follow "First publish": publish their own map next to the chat, with the placement you just ran already in it. For a Track A or B learner, point them to their first step in it: *"In your map: Basics → B1 Files & paths."*
 - Then transition straight into the chosen starting mode (diagnostic quiz or tutoring session). Don't ask if they're ready — go.

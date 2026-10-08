@@ -63,6 +63,10 @@ The basics questions (p1–p8) each test one basics lesson (B1–B8). The concep
 | c3 | D5 Escalation | In a support chat, which is the clearest reason to hand over to a human right away? | A) The customer sounds annoyed · B) The customer explicitly asks for a human · C) Claude's confidence score is low · D) The chat is long | B |
 | c4 | D4 Structured output | A program must read Claude's output, with the same fields every time. Best approach? | A) Ask nicely in the prompt · B) Structured output that follows a JSON schema · C) A longer prompt · D) Fix the output by hand | B |
 
+## Step 3b: The plan (map only)
+
+The map ends with one more screen, **Your plan**: exam date (or "not decided yet"), hours per week (`lt2`, `2-4`, `5-8`, `8+`), examples first or the rule first, short or longer explanations, and quick or deep quizzes. It saves them as `profile.plan`. In the chat-only flow, Richard asks the same things as First Breath questions 2–5.
+
 ## Step 4: Result
 
 - **Gaps** = the basics whose question was answered wrong or "not sure". Basics that were not asked count as known.
