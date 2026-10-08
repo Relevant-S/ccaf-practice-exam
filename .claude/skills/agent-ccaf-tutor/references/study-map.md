@@ -21,7 +21,7 @@ Only the map's owner (the learner) can read or write it, even if they share the 
 | `learner/placement` | You | A placement done in chat: `role`, `exp`, `gaps`, `track`, `date`, `at` (ISO timestamp), `source: "richard"`. The map adopts it if it's newer than its own. |
 | `learner/practice` | You | `tasks`: one entry per exam task code, e.g. `"3.2": {"answered": 7, "correct": 5, "last": "2026-10-08"}`. The map shows it in the lesson and counts 80%+ over 3 or more questions as the ring's check part. |
 
-Lesson ids in `progress`: basics are `b1`–`b9`; topic lessons are `t3.1`–`t3.6` (more as domains are added).
+Lesson ids in `progress`: basics are `b1`–`b9`; topic lessons are `t1.1`–`t5.6`, one per exam task (for example `t2.4`).
 
 Read and write with the **ArtifactData** tool (load it with ToolSearch: `select:ArtifactData`). Use the map's URL from `BOND.md`. Writes need the learner's approval the first time; that's expected.
 

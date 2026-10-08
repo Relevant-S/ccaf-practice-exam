@@ -21,7 +21,7 @@ Use the **Claude Desktop app**. Richard chats with you on one side and your **st
 Open **`study-map/ccaf-study-map.html`** in any browser. No install needed. It starts with a 5-minute placement (your role, then a few questions picked for it) and gives you a personal path:
 
 - **Basics** for people who aren't developers: just enough about files, git, the terminal, JSON, APIs and how Claude works to read the exam questions correctly.
-- **Lessons** per exam topic, with plain-language summaries, worked cases, self-checks and examples from your own job. Domain 3 (Claude Code) is complete; the other domains are on the way.
+- **Lessons** per exam topic, with plain-language summaries, worked cases, self-checks and examples from your own job. All five exam domains are covered: 30 lessons.
 - A ready prompt to paste into Richard, so the tutor starts at your level.
 
 Your progress in the map is saved in your browser only.
