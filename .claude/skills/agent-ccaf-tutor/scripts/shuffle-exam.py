@@ -20,6 +20,8 @@ Standard library only. Two subcommands:
   grade  Grade the learner's letters against the key.
          python3 shuffle-exam.py grade --key DIR/key.json --answers "B,A,C,..." \
              [--previous OLD_answers.json] [--save DIR/answers.json]
+         For a multiple-response ("choose N") item, give its letters together,
+         e.g. "B,AD,C". Order inside an item does not matter.
 
          Prints one line per question (letter shown, the ORIGINAL bank letter it
          maps to, the correct original letter, right or wrong), then the raw
@@ -32,6 +34,14 @@ Standard library only. Two subcommands:
 The bank format is: YAML-ish frontmatter, a "## Question" section, and a
 "## Options" section with lines like "- **A)** text", each followed by an
 indented "  - **Rationale:** ..." line. Rationales are never copied to the paper.
+
+Two question types:
+  mcq-single  options A-D, frontmatter "correct: B" (one letter).
+  mcq-multi   options A-D up to A-F, frontmatter "select: 2" and
+              "correct: [B, D]" (a list). Graded right only if the picked set
+              equals the key exactly (our convention; the exam guide does not
+              say whether partial credit exists).
+In key.json and answers.json a multi item's letters are a sorted string, e.g. "BD".
 """
 
 from __future__ import annotations
@@ -44,7 +54,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
-LETTERS = ["A", "B", "C", "D"]
+LETTERS = ["A", "B", "C", "D"]            # options on a single-answer item
+ALL_LETTERS = ["A", "B", "C", "D", "E", "F"]  # a multi item may use 4 to 6
 
 # Official exam domain weights.
 DOMAIN_WEIGHTS = {"D1": 0.27, "D2": 0.18, "D3": 0.20, "D4": 0.20, "D5": 0.15}
@@ -106,11 +117,30 @@ def parse_question(path: Path) -> dict:
             # Anything else (blank lines, rationale continuation) is dropped.
 
     qid = meta.get("id") or path.stem
-    if sorted(options) != LETTERS:
-        raise ValueError(f"{qid}: expected options A-D, found {sorted(options)}")
-    correct = meta.get("correct", "").strip().upper()
-    if correct not in LETTERS:
-        raise ValueError(f"{qid}: frontmatter 'correct' is missing or invalid")
+    raw_correct = meta.get("correct", "").strip().upper()
+    multi = meta.get("question_type", "").strip() == "mcq-multi" or raw_correct.startswith("[")
+    found = sorted(options)
+
+    if not multi:
+        if found != LETTERS:
+            raise ValueError(f"{qid}: expected options A-D, found {found}")
+        correct = raw_correct
+        if correct not in LETTERS:
+            raise ValueError(f"{qid}: frontmatter 'correct' is missing or invalid")
+        select = 1
+    else:
+        if not (4 <= len(found) <= 6) or found != ALL_LETTERS[:len(found)]:
+            raise ValueError(f"{qid}: a multiple-response item needs 4-6 options A-D..A-F with no gaps, found {found}")
+        letters = [x.strip() for x in raw_correct.strip("[]").split(",") if x.strip()]
+        if len(letters) < 2 or len(set(letters)) != len(letters) or any(x not in found for x in letters):
+            raise ValueError(f"{qid}: 'correct' must be a list of 2+ distinct option letters, e.g. [B, D]")
+        correct = "".join(sorted(letters))
+        try:
+            select = int(meta.get("select", len(letters)))
+        except ValueError:
+            raise ValueError(f"{qid}: 'select' must be a number") from None
+        if select != len(letters):
+            raise ValueError(f"{qid}: 'select: {select}' does not match {len(letters)} letters in 'correct'")
 
     def tidy(block: list[str]) -> str:
         return "\n".join(block).strip("\n").rstrip()
@@ -119,10 +149,22 @@ def parse_question(path: Path) -> dict:
         "id": qid,
         "domain": meta.get("domain") or None,
         "task": meta.get("task") or None,
+        "type": "mcq-multi" if multi else "mcq-single",
+        "select": select,
         "correct": correct,
         "stem": tidy(stem),
         "options": {k: tidy(v) for k, v in options.items()},
     }
+
+
+def map_letters(mapping: dict[str, str], picked: str) -> str | None:
+    """Map shown letter(s) to original letter(s); a sorted string, or None if any is invalid."""
+    if not picked:
+        return None
+    out = [mapping.get(ch) for ch in picked]
+    if any(o is None for o in out):
+        return None
+    return "".join(sorted(out))
 
 
 def find_question(qid: str, dirs: list[Path]) -> Path:
@@ -163,29 +205,35 @@ def cmd_make(args: argparse.Namespace) -> int:
     rng = random.Random(args.seed)
     block = args.block
     paper: list[str] = [f"# Mock exam — {len(ids)} questions", ""]
-    paper.append("Answer each question with one letter. No feedback until the end.")
+    paper.append("Answer each question with one letter, or with N letters where it says \"Choose N\" "
+                 "(e.g. B, AD, C). No feedback until the end.")
     paper.append("")
     key_items = []
 
     for n, qid in enumerate(ids, start=1):
         q = parse_question(find_question(qid, dirs))
-        order = LETTERS[:]  # order[i] = original letter shown at position i
+        multi = q["type"] == "mcq-multi"
+        shown = ALL_LETTERS[:len(q["options"])]
+        order = shown[:]  # order[i] = original letter shown at position i
         rng.shuffle(order)
-        shown_to_orig = {LETTERS[i]: order[i] for i in range(4)}
-        correct_shown = next(s for s, o in shown_to_orig.items() if o == q["correct"])
+        shown_to_orig = {shown[i]: order[i] for i in range(len(shown))}
+        orig_to_shown = {o: s for s, o in shown_to_orig.items()}
+        correct_shown = "".join(sorted(orig_to_shown[c] for c in q["correct"]))
 
         if (n - 1) % block == 0:
             last = min(n + block - 1, len(ids))
             paper += [f"## Block {(n - 1) // block + 1} — questions {n}–{last}", ""]
         paper += [f"### Q{n}", "", q["stem"], ""]
-        for s in LETTERS:
+        if multi and not re.search(rf"choose\s+{q['select']}\b", q["stem"], re.IGNORECASE):
+            paper += [f"**Choose {q['select']}.**", ""]
+        for s in shown:
             text = q["options"][shown_to_orig[s]]
             first, *rest = text.split("\n")
             paper.append(f"- **{s})** {first}")
             paper += [f"  {r}" if r else "" for r in rest]
         paper.append("")
 
-        key_items.append({
+        item = {
             "n": n,
             "id": q["id"],
             "domain": q["domain"],
@@ -193,7 +241,11 @@ def cmd_make(args: argparse.Namespace) -> int:
             "map": shown_to_orig,
             "correct": correct_shown,
             "correct_original": q["correct"],
-        })
+        }
+        if multi:
+            item["type"] = "mcq-multi"
+            item["select"] = q["select"]
+        key_items.append(item)
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -202,19 +254,25 @@ def cmd_make(args: argparse.Namespace) -> int:
     (out / "key.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
 
     moved = sum(1 for k in key_items if k["correct"] != k["correct_original"])
-    spread = {s: sum(1 for k in key_items if k["correct"] == s) for s in LETTERS}
+    singles = [k for k in key_items if k.get("type") != "mcq-multi"]
+    spread = {s: sum(1 for k in singles if k["correct"] == s) for s in LETTERS}
+    n_multi = len(key_items) - len(singles)
     print(f"Wrote {out / 'paper.md'} and {out / 'key.json'} ({len(key_items)} questions, seed {args.seed}).")
     print(f"Correct letter moved by the shuffle on {moved}/{len(key_items)} questions.")
-    print("Correct-letter spread on the paper: " + ", ".join(f"{s}={c}" for s, c in spread.items()))
+    print("Correct-letter spread on single-answer items: " + ", ".join(f"{s}={c}" for s, c in spread.items()))
+    if n_multi:
+        print(f"Multiple-response (choose N) items: {n_multi}")
     return 0
 
 
 # ---------- grade ----------
 
-def parse_answers(raw: str) -> list[str]:
+def parse_answers(raw: str, has_multi: bool = False) -> list[str]:
     raw = raw.strip().upper()
     if "," in raw or " " in raw:
         parts = [p.strip() for p in re.split(r"[,\s]+", raw) if p.strip()]
+    elif has_multi:
+        raise ValueError('this paper has "choose N" items: separate the answers with commas, e.g. "B,AD,C"')
     else:
         parts = list(raw)
     return parts
@@ -236,7 +294,7 @@ def load_previous(path: Path) -> dict[str, dict]:
 def cmd_grade(args: argparse.Namespace) -> int:
     key = json.loads(Path(args.key).read_text(encoding="utf-8"))
     items = key["questions"]
-    answers = parse_answers(args.answers)
+    answers = parse_answers(args.answers, any(i.get("type") == "mcq-multi" for i in items))
     if len(answers) != len(items):
         print(f"error: {len(answers)} answers for {len(items)} questions", file=sys.stderr)
         return 2
@@ -244,7 +302,12 @@ def cmd_grade(args: argparse.Namespace) -> int:
     results = []
     print(f"{'#':>3}  {'id':<10} {'dom':<4} {'task':<6} shown  orig  correct(orig)  result")
     for item, ans in zip(items, answers):
-        picked_orig = item["map"].get(ans)  # None for a blank or invalid answer
+        if item.get("type") == "mcq-multi":
+            # A set of letters: order does not matter, and it must match the key exactly.
+            ans = "".join(sorted(set(ans))) if ans != "-" else ans
+            picked_orig = map_letters(item["map"], ans)
+        else:
+            picked_orig = item["map"].get(ans)  # None for a blank or invalid answer
         ok = ans == item["correct"]
         results.append({**item, "picked": ans, "picked_original": picked_orig, "ok": ok})
         print(f"{item['n']:>3}  {item['id']:<10} {str(item['domain'] or '?'):<4} "
@@ -295,7 +358,7 @@ def cmd_grade(args: argparse.Namespace) -> int:
             # Letter memory: did they pick the LETTER they picked last time,
             # where that letter now points at a different option?
             old_shown = p.get("picked_shown")
-            if old_shown and r["map"].get(old_shown) != p["picked_original"]:
+            if old_shown and map_letters(r["map"], old_shown) != p["picked_original"]:
                 shown_den += 1
                 shown_same += r["picked"] == old_shown
         print()
@@ -354,7 +417,8 @@ def main() -> int:
 
     gr = sub.add_parser("grade", help="grade answers against key.json")
     gr.add_argument("--key", required=True, help="key.json from 'make'")
-    gr.add_argument("--answers", required=True, help='letters as shown, e.g. "B,A,C" or "BAC"; use - for blank')
+    gr.add_argument("--answers", required=True,
+                    help='letters as shown, e.g. "B,A,C" or "BAC"; a choose-N item as "B,AD,C"; use - for blank')
     gr.add_argument("--previous", help="answers.json from an earlier sitting (or {id: original_letter})")
     gr.add_argument("--save", help="write this sitting's picks to a JSON file")
 

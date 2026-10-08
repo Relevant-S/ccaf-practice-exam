@@ -1,13 +1,15 @@
 # CCAF Foundations — Domains, Task Statements, and Exam Scenarios
 
-Faithful structured restatement of Anthropic's *Claude Certified Architect – Foundations Certification Exam Guide* (Version 0.1, Feb 10 2025). Source PDF: `references/certification-exam-guide/Claude+Certified+Architect+–+Foundations+Certification+Exam+Guide.pdf`.
+Faithful structured restatement of Anthropic's *Claude Certified Architect – Foundations Certification Exam Guide*. Source of truth: **Version 1.0 (July 2026)**, `references/certification-exam-guide/CCA-Foundations-Exam-Guide-v1.0-July-2026.pdf`. This file was first written from Version 0.1 (Feb 10 2025, `Claude+Certified+Architect+–+Foundations+Certification+Exam+Guide.pdf`, kept for history). The tested content is the same in both versions: task statements, weights, scenarios and sample questions. Only the exam format changed (see below). Where wording differs, v1.0 wins.
 
 ---
 
 ## Exam Format
 
-- **Question type:** Multiple choice, single correct answer. 4 options. Distractors are designed to look plausible to a candidate with incomplete knowledge.
-- **Scoring:** Scaled 100–1,000. **Pass mark: 720.** Pass/fail designation. No penalty for guessing — unanswered questions count as incorrect.
+- **Length:** 60 items in 120 minutes, so about 2 minutes per item. Exam code CCAR-F.
+- **Question type:** "Multiple-choice and multiple-response items; each item states how many responses to select." So some items have one right answer, and some ask you to choose 2 or more. v1.0 does not say how many options an item has. (v0.1 said every item had one correct answer and three wrong ones.) The wrong options (distractors) are written to look right to someone with incomplete knowledge.
+- **Scoring:** Scaled score from 100 to 1,000. **Cut score: 720.** You are measured against a fixed standard, not against other candidates. The score report shows pass or fail, the scaled score, and the percent correct in each domain. The domain percents do not decide pass or fail; the total scaled score does.
+- **What v1.0 does not say:** how a multiple-response item is scored (for example, whether partial credit exists). v0.1 said "unanswered questions are scored as incorrect; there is no penalty for guessing". v1.0 is silent on this.
 - **Scenario structure:** The exam draws **4 scenarios at random from the 6 scenarios** below. Each scenario frames a set of questions in a realistic production context.
 - **Target candidate:** Solution architect with 6+ months of hands-on experience building with Claude APIs, Agent SDK, Claude Code, and MCP.
 

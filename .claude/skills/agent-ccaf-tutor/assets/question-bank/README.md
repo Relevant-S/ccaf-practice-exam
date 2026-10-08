@@ -39,14 +39,25 @@ subtopic: parallel-calls   # optional, free-form
 source: practice-test-A    # where this question came from
 source_ref: "Q14"          # optional — original numbering in the source
 difficulty: medium         # easy | medium | hard
-question_type: mcq-single  # mcq-single (only type for now)
+question_type: mcq-single  # mcq-single | mcq-multi (see "Multiple-response items" below)
 has_image: false           # true if the body references an image
 has_code: true             # true if the body contains a code block
-correct: B                 # A | B | C | D
+correct: B                 # mcq-single: one letter, A | B | C | D
 tags: [api, streaming]     # optional — free-form additional tags
-key_changed: "..."         # optional — why the answer key was changed from the source
+key_changed: "..."         # optional — why the key was changed; must quote the exam guide line
+key_checked: "..."         # optional — the guide line that confirms a disputed key is right
 ---
 ```
+
+A multiple-response item (`mcq-multi`) adds `select` and uses a list for `correct`:
+
+```yaml
+question_type: mcq-multi
+select: 2                  # how many options to pick; must equal the length of `correct`
+correct: [B, D]            # a list of letters, A–F
+```
+
+**Changing a key.** The official exam guide v1.0 outranks every third-party source, including the practice test most of this bank comes from. Never change a key just to match a third-party key. A key changes only when you can quote the guide line that supports the new answer. Put that quote in `key_changed`.
 
 ### Body structure
 
@@ -193,6 +204,33 @@ actual question. Put the full scenario inside `## Question` — don't split
 it. If the scenario is reused across multiple questions in the source,
 duplicate it into each question file (questions are self-contained).
 
+### Multiple-response items (`mcq-multi`)
+
+The v1.0 exam guide says the exam has "multiple-choice and multiple-response items; each item states how many responses to select". Write a multiple-response item like this:
+
+- `question_type: mcq-multi`, `select: N`, and `correct` as a list, e.g. `correct: [B, D]`.
+- **4–6 options** (A–F). As a rough guide: 5 options for "choose 2", 6 for "choose 3".
+- **State the count in the stem**, e.g. end it with "Which TWO changes are most effective? (Choose 2.)".
+- **A rationale on every option.** Each correct option's rationale starts with `Correct.`. Each wrong option's rationale names the misconception.
+- Each option should stand as its own true/false call. Avoid options that are only right as a pair.
+
+Example options block for `select: 2`, `correct: [B, D]`:
+
+```markdown
+- **A)** {option text}
+  - **Rationale:** {why it is wrong}
+- **B)** {option text}
+  - **Rationale:** Correct. {why it is right}
+- **C)** {option text}
+  - **Rationale:** {why it is wrong}
+- **D)** {option text}
+  - **Rationale:** Correct. {why it is right}
+- **E)** {option text}
+  - **Rationale:** {why it is wrong}
+```
+
+Richard grades a multiple-response item right only if the chosen set equals the key exactly. That is this project's convention. The guide does not say whether the real exam gives partial credit.
+
 ### Questions with multi-line options
 
 Options can span multiple lines or contain code. Keep the `- **A)**`
@@ -285,11 +323,13 @@ but the IDs remain stable so historical references in user sanctums
 ## Validation checklist (before committing a question)
 
 - [ ] Frontmatter has all required fields, valid values
-- [ ] `correct` is one of A, B, C, D
-- [ ] Exactly four options, each with a `- **X)**` prefix
+- [ ] `mcq-single`: `correct` is one of A, B, C, D, and there are exactly four options
+- [ ] `mcq-multi`: `correct` is a list of letters, `select` equals its length, there are 4–6 options (A–F), and the stem states the count ("Choose N")
+- [ ] Every option has a `- **X)**` prefix, with letters in order from A and no gaps
 - [ ] Each option has a `**Rationale:**` sub-bullet
-- [ ] The rationale on the `correct` option starts with `Correct.` and explains the reasoning
-- [ ] The rationales on the three wrong options each name the specific misconception or failure mode
+- [ ] The rationale on every correct option starts with `Correct.` and explains the reasoning
+- [ ] The rationales on the wrong options each name the specific misconception or failure mode
+- [ ] If the key differs from the source, `key_changed` quotes the exam guide line behind it
 - [ ] If `has_image: true`, the image file exists in `_images/`
 - [ ] If `has_code: true`, code blocks have a language tag
 - [ ] Topic slug matches one in `assets/syllabus/topics.md` (or is added there)
@@ -299,4 +339,4 @@ but the IDs remain stable so historical references in user sanctums
 - [ ] Nothing in the stem cues the answer (no bold on the deciding sentence)
 - [ ] The question stands alone (no "same scenario as before")
 - [ ] No learner details (names, dates, scores, "you missed this")
-- [ ] Across a batch of new questions, the correct letters are spread roughly evenly over A–D
+- [ ] Across a batch of new questions, the correct letters are spread roughly evenly over the options

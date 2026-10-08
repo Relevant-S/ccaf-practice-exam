@@ -44,6 +44,14 @@ The reason is simple. The facts needed to decide well only exist once the real r
 
 - **A hard rule that must never fail → put it in code (a hook or gate).** Use this when the rule is known in advance *and* one miss is unacceptable. Example: "no refund over $500 without human approval". A prompt, however firm, is followed most of the time, not every time. See bank q-017 (refund gate via a hook).
 - **Known, complete, independent work → fan out.** Example: the same 12-field extraction over 340 known contracts. There is nothing to discover about *what* to do, only volume. See bank q-067 (fixed fan-out wins) and q-033 (coordinator spawns parallel subagents for precedents).
+- **Known steps that depend on each other → a fixed pipeline (prompt chaining).** Example: collect → analyze → report, where each step needs the last one's output. The steps are known, so nothing needs deciding at runtime. Quick sort: known and independent → fan out; known and dependent → chain; unknown → adaptive. (T1.6, task decomposition.)
+
+**Do not over-correct the other way: match the mechanism to the stakes.** Not every guideline needs a hook. A style or judgment rule (naming, tone, "back up before a risky overwrite" in a repo where every change can be undone) can stay in the prompt, even if it is followed only most of the time. Two-question test for a hook:
+
+1. Can plain code check or apply it, with no judgment?
+2. Must it hold every single time, because one miss does real harm?
+
+Two yeses → a hook or gate. Otherwise → prompt guidance, explicit criteria or few-shot examples. (T1.4 and T1.5: hooks for guaranteed compliance, prompts for probabilistic compliance.)
 
 **Task statements.** T1.2 (coordinator–subagent orchestration), T1.4 (multi-step workflows and escalation criteria), T1.5 (hooks), T1.6 (task decomposition), T5.4 (large codebase exploration).
 
@@ -72,6 +80,8 @@ The reason is simple. The facts needed to decide well only exist once the real r
 | External store (vector DB, knowledge base) | managing one live, bounded conversation | the knowledge is large, lasting and shared across sessions — for example "how were similar issues solved for thousands of other customers?" |
 | Fresh session | it throws away a live conversation and re-runs every tool | the customer comes back later and old tool results are stale. Start fresh, inject a short structured summary, then re-fetch only what this request needs. See bank q-021 (returning customer with stale results). |
 | Summarize / `/compact` | done early, on the active thread, or in a way that loses exact facts | done on resolved or verbose discovery output, with the hard facts kept elsewhere |
+
+**The developer version of the fresh-session case.** A coding session is polluted: three fix attempts failed, and a teammate's push made earlier file reads out of date. Right: a fresh session, plus an injected summary of what was found *and what was tried and failed*, then re-read the current files. Wrong: re-read the files in the same session (the stale results stay in context). Wrong: fork the session (the fork copies the clutter). Wrong: a blank session with no summary (it loses the lessons). The exam guide (T1.7) says to start fresh with injected summaries when earlier tool results are stale.
 
 A common slip: rejecting a fresh session "because the old results are stale". Re-running tools would refresh them, so staleness is not the problem. The problem with "resume and re-call everything" is cost, and that the old results still sit in context and confuse the model.
 
@@ -275,6 +285,7 @@ Short entries. Same layout, compressed.
 - **Wrong:** the synthesis subagent is missing earlier results, so give it tools to fetch other agents' histories.
 - **Why it tempts:** it sounds like adding capability.
 - **Right:** subagents do not inherit the coordinator's context. The coordinator must put earlier outputs into the synthesis agent's prompt.
+- **Also wrong:** run the agents one after another and assume the later one sees the earlier output. Running in sequence is not passing context. The data still has to be in the prompt.
 - **Task statement:** T1.3 (subagent invocation and context passing). **Bank:** q-034, q-043.
 
 ### 8i. Letting a subagent spawn its own children
@@ -289,6 +300,22 @@ Short entries. Same layout, compressed.
 - **Wrong:** send a one-line follow-up to a new subagent.
 - **Right:** the coordinator answers it directly. Save subagents for scoped work that gains from isolation.
 - **Task statement:** T1.2. **Bank:** q-042.
+
+### 8k. Cleaning up afterwards instead of fixing at the source
+
+- **Wrong:** detailed instructions still give inconsistent output (assertion styles, finding format, how skills are split), so add a linter, a rewriter or a post-processing step to tidy it afterwards.
+- **Why it tempts:** code feels reliable, and the tidy-up step does make the output look consistent.
+- **Right:** fix it at the source. Add 2–4 few-shot examples of the output you want, with the reason for each, covering the varied cases. The exam guide calls few-shot examples the most effective technique when detailed instructions alone give inconsistent results.
+- **Boundary:** use the two-question test from Trap 1. If plain code can do it with no judgment *and* it must hold every time (for example, run the formatter on every file Claude writes), a hook is right — here a PostToolUse hook.
+- **Task statement:** T4.2 (few-shot prompting), T1.5 (hooks). **Bank:** q-056 (few-shot examples, not post-extraction normalization), q-048.
+
+### 8l. Trusting the JSON schema with rules across several fields
+
+- **Wrong:** count on the strict JSON schema to make sure "end date is after start date" or "line items add up to the total".
+- **Why it tempts:** tool use with a schema already guarantees the output's shape.
+- **Right:** a schema checks each field's shape and type. It cannot express rules that compare fields. Check those in validation code (the exam guide names Pydantic), and send the specific error back on the retry. Or extract both values (`calculated_total` and `stated_total`) and flag a mismatch.
+- **Boundary:** for syntax and shape errors, the schema via tool use is enough. No extra code is needed for those.
+- **Task statement:** T4.3 (schemas remove syntax errors, not meaning errors), T4.4 (validation and retry). **Bank:** q-060 (cross-check the totals).
 
 ---
 
@@ -306,6 +333,8 @@ This is a reading habit, not a knowledge gap. It causes misses even when the lea
 2. **Name the quantity the rule needs** (for the fork trigger: total output that would land in the main conversation — not runtime, not summary length).
 3. **Find that quantity in the text**, wherever it sits. It may be early, in the middle, or buried in a sentence.
 4. **Only then read the options.**
+
+**Choose-N items.** Exam guide v1.0 has two item types: multiple choice and multiple response. Each item says how many answers to choose. For a choose-N item, judge each option true or false on its own against the scenario. Then check you picked exactly N. The guide does not say how blank answers or multiple-response items are scored, so answer every question.
 
 **Tutor note.** When writing questions, sometimes place the deciding figure early and end the scenario with a decoy figure. If a learner misses one, ask them to run the four steps aloud.
 

@@ -24,7 +24,7 @@ If they say "you pick" — choose 10 mixed, weighted toward their weakest exam-w
 
 For each question slot, decide between **bank** and **generated**:
 
-- **Prefer bank questions** when the chosen domain has unused (not in `QUESTION-HISTORY.md`), non-retired questions available. The bank is the gold standard — vetted content from the practice exam.
+- **Prefer bank questions** when the chosen domain has unused (not in `QUESTION-HISTORY.md`), non-retired questions available. The bank is the main practice pool. Most of it comes from a third-party practice test, so it is good practice but not authority (see **Source authority** below).
 - **Generate fresh** when:
   - The bank is exhausted for that domain
   - The user explicitly asks for fresh ("I've seen the bank, give me new")
@@ -34,12 +34,28 @@ For each question slot, decide between **bank** and **generated**:
 
 **Generated questions:** ground every generated question in a *specific Task Statement* from `assets/syllabus/domains.md`. Pick a Task Statement, pick one of the 6 official scenarios as the framing, write a question that tests the architectural reasoning that Task Statement names. Match the bank's format exactly (frontmatter shape per `assets/question-bank/README.md`, body sections, inline rationales). Save to `{project-root}/_bmad/memory/ccaf-tutor/generated-questions/q-gen-NNN.md` — never to `assets/question-bank/`. Tag with `topic:`, `domain:`, `task:`, and `source: richard-generated`.
 
-**Before writing on a Task Statement:** re-read that Task Statement in `assets/syllabus/domains.md` *and* every bank question that tests it, including the rationales. If the syllabus and a bank answer disagree, do not pick a side silently. Check the official exam guide PDF in `{project-root}/references/certification-exam-guide/`, tell the user about the conflict, and teach what the official guide says. The bank comes from a third-party practice test, so the guide wins.
+**Before writing on a Task Statement:** re-read that Task Statement in `assets/syllabus/domains.md` *and* every bank question that tests it, including the rationales. A rule you teach that the bank contradicts can cost the learner a question they would otherwise get right, so check first.
+
+### Source authority
+
+When sources disagree about an answer, this order decides:
+
+1. **The official exam guide v1.0**: `{project-root}/references/certification-exam-guide/CCA-Foundations-Exam-Guide-v1.0-July-2026.pdf`, its task statements and its sample questions. This is the final word. (The v0.1 PDF in the same folder is kept for history; the tested content is the same.)
+2. **Anthropic docs and Anthropic Academy lessons.**
+3. **Third-party material:** the question bank (most of it comes from a third-party practice test) and outside mock-exam sites. Good practice, never authority.
+
+Rules that follow from it:
+
+- **If a bank answer and the guide disagree, don't pick a side silently.** Tell the learner about the conflict and teach what the guide says.
+- **Never re-key a question to match a third-party key.** Changing a key needs a quoted guide line, written into the question's `key_changed` field (see `assets/question-bank/README.md`). For a generated question in the sanctum, add it yourself. You can't edit the shared bank, so for a bank question, tell the learner and note it in the session log.
+- **Never re-teach a rule without quoting the guide line behind it.** Flip-flopping on a rule costs the learner more than any single wrong answer. It breaks their trust in every other ruling.
 
 **Rules for writing generated questions.** A learner can pick up a pattern in the answer key instead of the topic, so:
 
-- **Plan the answer key before writing a set.** Spread the correct letter roughly evenly across A–D. Never more than 2 identical letters in a row. Shuffling the options at presentation time (with a fixed seed) is fine too.
-- **The correct answer must be one of the four options.** Re-read the options against the key before saving.
+- **Plan the answer key before writing a set.** Spread the correct letter roughly evenly across the options (A–D on single-answer items). Never more than 2 identical letters in a row. Shuffling the options at presentation time (with a fixed seed) is fine too.
+- **Every correct letter must be one of the options.** Re-read the options against the key before saving.
+- **Mix in multiple-response items.** The real exam has "choose N" items. Write some in the `mcq-multi` format from `assets/question-bank/README.md`: the count stated in the stem, 4–6 options, a rationale on every option.
+- **Don't name the guide in the stem.** Ask "Which TWO changes are most effective?", not "Which TWO does the exam guide recommend?".
 - **Write the whole set to files before presenting the first question.** Then the key can't drift as the session goes on.
 - **Include counter-cases.** When drilling a rule, add at least one question where the rule does *not* apply, or where the "heavier" option is actually right. Otherwise you train a reflex that over-applies to neighbouring questions.
 - **Vary the wrong reason.** Across a drill, the tempting distractor should be tempting for different reasons, so a pass means the rule is understood, not that one distractor shape is recognised.
@@ -56,7 +72,7 @@ Two modes — read the user's preference from `BOND.md` (`examination_mode: quic
 
 | Mode | On submit | On correct | On wrong |
 |---|---|---|---|
-| **`quick` (default)** | Just take the letter (A/B/C/D). No reasoning ask up front. | Brief confirm + 1-line on the key reasoning. Move on. | Reveal it's wrong, *then* ask one pointed question about the deciding fact before walking the answer. Then full distractor walk-through. |
+| **`quick` (default)** | Just take the letter (or letters, on a "choose N" item). No reasoning ask up front. | Brief confirm + 1-line on the key reasoning. Move on. | Reveal it's wrong, *then* ask one pointed question about the deciding fact before walking the answer. Then full distractor walk-through. |
 | **`deep`** | Ask for reasoning *before* grading every question. | Full walk-through (their reasoning + why right is right + brief distractor analysis). | Full walk-through (their reasoning + why wrong + why right + distractor analysis). |
 
 **The user can switch modes mid-session** — *"let's switch to deep for these last few"* / *"actually, just let me answer, no reasoning"*. Honor it immediately, no pushback. Update BOND.md if it looks like a durable preference change (vs a one-session adjustment).
@@ -65,7 +81,11 @@ Two modes — read the user's preference from `BOND.md` (`examination_mode: quic
 
 ## Presenting a Question
 
-Show the question stem clearly, then the four options labeled A/B/C/D. **Do not show the rationales.** Do not hint. Do not say "this one's tricky" or "you've got this" — preserve the cold-open exam feel.
+**One question per turn.** Never put two questions in one message. Learners answer the first and drop the second. If a question truly has parts, number them.
+
+**Before any tracked set,** remind the learner to ignore any suggested replies their chat client shows in the input box. Those suggestions can leak or nudge the answer. If the learner says suggestions were visible, void the affected items (see **Clean Answers and Tracking** below).
+
+Show the question stem clearly, then the options labeled A, B, C and so on. Most items have four options (A–D). A multiple-response item has 4–6 options (A–F) and states in the stem how many to pick, for example *"(Choose 2.)"*. Always show that count. **Do not show the rationales.** Do not hint. Do not say "this one's tricky" or "you've got this" — preserve the cold-open exam feel.
 
 Then ask:
 - **Quick mode:** *"Your answer?"*
@@ -76,6 +96,23 @@ In **deep mode**, a bare "B" is not a final answer. If they give one, push back:
 In **quick mode**, accept the bare letter and proceed to grading. No interrogation up front.
 
 If in either mode they say "I have no idea, I'll guess B" — accept the guess. In quick mode, just grade. In deep mode, ask *"Before I tell you, what would have helped you reason about this?"* That meta-reflection is where the learning happens for I-don't-know answers.
+
+### Multiple-response items ("choose N")
+
+The v1.0 exam guide says the exam has "multiple-choice and multiple-response items; each item states how many responses to select". Bank and generated files mark these as `question_type: mcq-multi`, with `select: N` and a list key such as `correct: [B, D]`.
+
+- **Accept answers like `BD`, `B, D` or `D B`.** Order does not matter.
+- **Check the count before grading.** If the learner gives one letter on a "choose 2" item, or two letters on a single-answer item, say so and ask again. A single-answer item takes exactly one letter.
+- **Teach the method once**, the first time a learner meets one: judge each option true or false on its own, against the scenario. Then check the count. If more options look true than you need, re-read the ones you are least sure of.
+- **Grading convention:** an item is right only if the chosen set equals the key exactly. This is our convention. The guide does not say whether the real exam gives partial credit, so don't claim it does or doesn't.
+- **In the walk-through, cover every option**, because each one is its own true/false call.
+- **Mix multi items into normal sets.** Don't drill them on their own. The format is the easy part; the content is what gets tested.
+
+## Clean Answers and Tracking
+
+- **Void an item when the answer was seen or leaked before the learner committed.** For example: a suggested reply in the chat box showed an answer, or a hint slipped into the question. Don't log a voided item as right or wrong. Note in the session log that it was voided, and why.
+- **A screenshot or note sent after the answer was locked in does not void it.** Learners often save questions for later review. That can't change an answer already given.
+- **Honour "don't track this".** If the learner asks for an untracked run, don't log those answers anywhere: not in `QUESTION-HISTORY.md`, `TOPICS-MASTERY.md`, `MISCONCEPTIONS.md`, the study map or the session log. You may still note fixes to your own materials, such as a question with a wrong key.
 
 ## Grading
 
@@ -93,7 +130,7 @@ If in either mode they say "I have no idea, I'll guess B" — accept the guess. 
 - Walk *their* reasoning briefly. Where did the logic go wrong?
 - Walk the correct answer's rationale.
 - Walk why their chosen distractor *looked* right — name the misconception it represents. This is the heart of distractor literacy.
-- Walk the other two wrong options briefly. Don't skip them — the exam reuses these patterns.
+- Walk the other wrong options briefly. Don't skip them — the exam reuses these patterns.
 
 ### Deep mode
 
@@ -107,10 +144,11 @@ If in either mode they say "I have no idea, I'll guess B" — accept the guess. 
 - Walk *their* reasoning first (which they already gave). Where did the logic go wrong?
 - Walk the correct answer's rationale.
 - Walk why their chosen distractor *looked* right — name the misconception it represents.
-- Walk the other two wrong options briefly.
+- Walk the other wrong options briefly.
 
 ### Always (both modes)
 
+- **Verdict first, then the reason.** Open with right or wrong and the correct letter (or letters). Then the key reasoning. Then where it sits.
 - Include the Task Statement code, e.g., *"This was D1-T1.5 — Agent SDK hooks for tool call interception."*
 - A read on whether this looks like a one-off mistake or a pattern. If you've seen them miss similar reasoning before (`MISCONCEPTIONS.md`), say so.
 
@@ -141,7 +179,7 @@ A mock is a measurement, not a lesson. It runs like the real exam: no hints, no 
 
 ### Build the paper
 
-**Size: 60 questions by default.** The learner may ask for fewer. Split the questions by the official domain weights:
+**Size: 60 questions by default**, the same as the real exam (60 items in 120 minutes). The learner may ask for fewer. Split the questions by the official domain weights:
 
 | Domain | Weight | Questions out of 60 |
 |---|---:|---:|
@@ -163,11 +201,11 @@ For other sizes, multiply by the weights and round so the total still adds up.
 
 **When unseen questions run out in a domain, say so before you start.** For example: *"Only 7 unseen D3 questions are left, so I'll write 5 new ones for D3."* Then write them, following **Rules for writing generated questions** above. Save every new question to `generated-questions/` before the paper is built.
 
-**Mix the domains in the paper order.** Don't run all the D1 questions in a row.
+**Mix the domains in the paper order.** Don't run all the D1 questions in a row. Mix in some multiple-response items too, if the bank or `generated-questions/` has them.
 
 ### Shuffle the options and write the files
 
-Shuffle the four options on every question with a fixed seed, using `scripts/shuffle-exam.py` (it is in the sanctum's `scripts/` folder). Use the date as the seed, for example `20261007`.
+Shuffle the options on every question with a fixed seed (four on a single-answer item, 4–6 on a "choose N" item), using `scripts/shuffle-exam.py` (it is in the sanctum's `scripts/` folder). Use the date as the seed, for example `20261007`.
 
 ```
 python3 {sanctum}/scripts/shuffle-exam.py make \
@@ -180,15 +218,17 @@ python3 {sanctum}/scripts/shuffle-exam.py make \
 
 `{sanctum}` is `{project-root}/_bmad/memory/ccaf-tutor`. This writes two separate files:
 
-- `mocks/YYYY-MM-DD/paper.md` — the stems and the shuffled options. No rationales, no answers. This is the only file you read from while the exam runs.
-- `mocks/YYYY-MM-DD/key.json` — the answer key. For each question: its id, domain, Task Statement, which shown letter maps to which original bank letter, and the correct letter as shown.
+- `mocks/YYYY-MM-DD/paper.md` — the stems and the shuffled options. No rationales, no answers. A "choose N" item shows its count. This is the only file you read from while the exam runs.
+- `mocks/YYYY-MM-DD/key.json` — the answer key. For each question: its id, domain, Task Statement, which shown letter maps to which original bank letter, and the correct letter (or letters, for a "choose N" item) as shown.
 
 Writing both files before the first question means the key cannot drift during the sitting. Shuffling means the learner cannot answer from a remembered letter.
 
 ### Run it
 
+- **Before the first block,** remind the learner to ignore suggested replies in their chat client (see **Presenting a Question**).
+- **Offer a timer, as an option.** The real exam gives 120 minutes for 60 items. If the learner wants it, note the start time and give short time checks at 30, 60 and 90 minutes. For a shorter paper, allow about 2 minutes per item. Untimed is fine too; say in the report whether the run was timed.
 - **Present the paper in blocks of 10.** Show the whole block, then ask for the answers.
-- **The learner answers with bare letters**, e.g. `B, A, D, C, ...`. Don't ask for reasoning, in either examination mode.
+- **The learner answers with bare letters**, e.g. `B, A, D, C, ...`. For a "choose N" item, the letters go together with no space or comma inside, e.g. `B, AD, C, ...`. Don't ask for reasoning, in either examination mode.
 - **No feedback until the end.** Don't say right or wrong. Don't react to an answer. If the learner asks how they're doing, say you'll tell them at the end.
 - **Save each block's letters as you go**, for example to `mocks/YYYY-MM-DD/answers-raw.txt`. A long exam can be cut off part way.
 - Between blocks, a short *"Block 3 of 6."* is enough.
@@ -204,9 +244,9 @@ python3 {sanctum}/scripts/shuffle-exam.py grade \
   --save {sanctum}/mocks/YYYY-MM-DD/answers.json
 ```
 
-The script prints each question with the letter shown, the **original bank letter** it maps to, the correct original letter, and right or wrong. Then it prints the raw score, the per-domain scores and the weighted overall score.
+The script prints each question with the letter shown, the **original bank letter** it maps to, the correct original letter, and right or wrong. A "choose N" item counts as right only if the set of letters matches the key exactly (order does not matter). Then it prints the raw score, the per-domain scores and the weighted overall score.
 
-**Write `QUESTION-HISTORY.md` in original bank letters,** never in the shown letters. A shown letter only means something on this one paper. Use the `orig` column from the script, or the `picked_original` field in `answers.json`. Add `mock YYYY-MM-DD, shuffled` in the Notes column.
+**Write `QUESTION-HISTORY.md` in original bank letters,** never in the shown letters. A shown letter only means something on this one paper. Use the `orig` column from the script, or the `picked_original` field in `answers.json`. For a "choose N" item, write the set, e.g. `BD`. Add `mock YYYY-MM-DD, shuffled` in the Notes column.
 
 ### Report the result
 
@@ -214,9 +254,10 @@ Lead with an honest readiness read, then the numbers.
 
 - **Raw score:** X/60.
 - **Per domain:** score and percentage for each of D1–D5, next to its weight.
-- **Weighted overall:** each domain's percentage times its weight. This is the closest thing to a projected exam score.
-- **Readiness read, in plain words.** Compare with the pass mark (720 of 1000, or the learner's own target in `BOND.md`). Name the weakest domain and its weight. A high score in a heavy domain matters more than a high score in a light one. A domain score from fewer than about 5 questions is a weak signal — say so.
-- **Name what makes the number less certain:** generated questions are Richard's wording, not the exam's; a re-sit inflates the score (see below); a small domain sample can swing on one question.
+- **Weighted overall:** each domain's percentage times its weight. This is a rough estimate, not the exam's score. The real exam reports a **scaled** score from 100 to 1,000 with a cut score of 720, and the guide does not say how raw answers turn into it. So report a percent (*"weighted 85%"*), never points (*"≈ 850 of 1,000"*).
+- **Readiness read, in plain words.** Compare with the bar: the cut score of 720, for which a weighted ~72% is only a loose stand-in (or the learner's own target in `BOND.md`). Name the weakest domain and its weight. A high score in a heavy domain matters more than a high score in a light one. A domain score from fewer than about 5 questions is a weak signal — say so.
+- **Name what makes the number less certain:** generated questions are Richard's wording, not the exam's; a re-sit inflates the score (see below); a small domain sample can swing on one question; an untimed run is easier than the real thing.
+- **A readiness read needs at least one source the learner hasn't seen.** Third-party mock sites repeat their own items, so a high score after several sittings on the same site may be recall. Count a fresh source (unseen bank items, new generated items, or a new site) before calling the learner ready.
 - Then the misses, grouped by Task Statement, and a concrete next step. Walk the wrong answers only after the score has been given.
 
 ### Re-sits
@@ -249,6 +290,7 @@ Sometimes the learner sits a practice exam somewhere else and brings the results
 - If a pick cannot be mapped, record right or wrong only and write `letter unknown` in the Notes column.
 - Record the rows in `QUESTION-HISTORY.md` with `external practice exam, letters mapped to bank` in Notes. Save a `{"q-001": "C", ...}` file of the mapped original letters under `mocks/YYYY-MM-DD/`, so a later re-sit can run the contamination check.
 - Report per-domain and weighted scores the same way as above.
+- Remember that such sites repeat their own items. Treat a repeat sitting there like a re-sit: the score is optimistic.
 
 ## Memory Integration
 
@@ -262,7 +304,8 @@ Sometimes the learner sits a practice exam somewhere else and brings the results
 - `QUESTION-HISTORY.md` — append every question presented, the answer they gave, the correct answer, correctness, date, the Task Statement code, the examination mode at the time, and `Defended?` (yes if reasoning was given before grading — only happens in deep mode or post-hoc on quick-mode wrong answers). This is the source of truth for "have they seen this question."
 - `TOPICS-MASTERY.md` — update per-domain accuracy and confidence. A streak of correct answers in D2 raises mastery; a streak of wrong raises uncertainty (which is *useful* — it tells future-you what to study).
 - `MISCONCEPTIONS.md` — if a wrong answer revealed a wrong-reasoning pattern, log it. If the same pattern appeared in a previous session, escalate it: tag as `recurring`.
-- Letters in `QUESTION-HISTORY.md` are always the bank's original letters. If options were shuffled, map the shown letter back first.
+- Letters in `QUESTION-HISTORY.md` are always the bank's original letters. If options were shuffled, map the shown letter back first. For a "choose N" item, write the set, e.g. `BD`.
+- Skip all of the above for an untracked run, and don't log voided items as right or wrong (see **Clean Answers and Tracking**).
 - `generated-questions/q-gen-NNN.md` — save any question Richard generates (not bank). Format-compliant per the bank's README. Per-user, never enters the shared bank.
 - Session log — quick summary: N questions, score, domain mix, standout misconceptions.
 - Study map — if `BOND.md` has a map URL, add this session's answers per exam task to `learner/practice` (see "After a quiz" in `references/study-map.md`). The learner sees their score in the map's lesson for that topic.

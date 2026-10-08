@@ -12,6 +12,17 @@ The exam tests judgment in realistic production settings, not trivia. Most wrong
 
 For the matching list of distractor patterns, see `assets/common-traps.md`.
 
+**The exam format (exam guide v1.0, July 2026).**
+
+- 60 questions in 120 minutes — about 2 minutes each.
+- Two item types: multiple choice and multiple response. Each item says how many answers to choose.
+- You get 4 of the 6 scenarios, picked at random.
+- Scaled score from 100 to 1,000. The pass mark is 720. A scaled score is not a percentage.
+- The report shows pass or fail, plus your percentage correct in each domain.
+- The guide does not say how blank answers are scored, so answer every question.
+
+**Method for a choose-N item.** Judge each option true or false on its own against the scenario. Then check you picked exactly N.
+
 ---
 
 ## Part 1 — Three Decision Rules
@@ -52,6 +63,17 @@ Example (T1.4 and T1.5, enforcement and hooks): no refund over $500 without huma
 - ✅ Fan out across parallel subagents, each taking a slice, then combine the results.
 
 Fan-out is wrong when it is *premature*. It is right when there is nothing to discover about *what* to do — only volume.
+
+**3. Known steps that depend on each other → a fixed pipeline.** Example (T1.6, prompt chaining): collect → analyze → report, where each step needs the last one's output. Known and dependent → chain. Known and independent → fan out. Unknown → adaptive.
+
+#### Match the mechanism to the stakes
+
+Do not over-correct. Not every guideline needs a hook. Style and judgment rules (naming, tone, a "back up first" habit in a repo where every change can be undone) can stay in the prompt. Two questions decide it:
+
+1. Can plain code check or apply the rule, with no judgment?
+2. Must it hold every single time, because one miss does real harm?
+
+Two yeses → a hook or gate. Otherwise → prompt guidance, explicit criteria or few-shot examples. (T1.4 and T1.5: hooks give guaranteed compliance; prompts give probabilistic compliance.)
 
 ---
 
@@ -156,6 +178,7 @@ Subagents **do not inherit** the coordinator's context. Anything a subagent need
 
 - ❌ Assume the synthesis subagent can see what the research subagents found.
 - ❌ Give the synthesis subagent tools to fetch other agents' histories.
+- ❌ Run the agents one after another and assume the later one sees the earlier output. Running in sequence is not passing context.
 - ✅ The coordinator puts the research findings into the synthesis subagent's prompt.
 
 **Keep structure end to end.** Subagents should return structured content with source metadata (claim → source, dates). Do not return prose and rebuild the sources later.
@@ -210,6 +233,8 @@ The exam guide calls the blocking kind "tool call interception hooks". It names 
 
 **Mental model.** Prompt = persuasion (works most of the time). Hook = enforcement (works every time). Match the tool to how bad a miss would be.
 
+**Pre or Post? One question.** Is the damage done the moment the tool runs (money moves, a file is deleted)? Then it must be PreToolUse. PostToolUse is too late to stop it. Use PostToolUse when you need what the tool produced — to clean it up or check it.
+
 #### T1.6 — Task decomposition: fixed chain vs adaptive
 
 When each step depends on what the last one found, decide the next step from the last result.
@@ -217,7 +242,7 @@ When each step depends on what the last one found, decide the next step from the
 - ❌ "Write a full plan first, then execute it" for an unknown production error.
 - ✅ Form a hypothesis, investigate, let each finding shape the next step, under a clear "diagnosed" bar.
 
-**When fixed decomposition wins.** Known, independent steps — for example, the same review pass over each file, then a separate pass for cross-file issues. See Rule 1.
+**When fixed decomposition wins.** Known, independent steps — for example, the same review pass over each file, then a separate pass for cross-file issues. Also known steps that depend on each other, such as collect → analyze → report: a fixed pipeline, each output feeding the next. See Rule 1.
 
 #### T1.7 — Sessions: resume, fork, and when to start fresh
 
@@ -227,6 +252,7 @@ When each step depends on what the last one found, decide the next step from the
   - CLI: `--resume` or `--continue` plus `--fork-session`.
 - **Targeted delta on resume:** tell the agent exactly what changed (for example, which files were edited). Do not make it re-read everything.
 - **Start fresh with a summary** when old tool results are stale (see Rule 2).
+- **Polluted coding session** (several failed attempts, files changed by a teammate's push): start a fresh session, inject a summary of what you found *and what was tried and failed*, then re-read the current files. Not a re-read in the same session (stale results stay in context). Not a fork (it copies the clutter). Not a blank session (it loses the lessons).
 
 - ❌ Run one refactoring approach, then start a fresh session for the other. You lose the shared starting point.
 - ✅ Fork from the shared baseline, one approach per branch, then compare.
@@ -347,6 +373,8 @@ Subdirectory `CLAUDE.md` files load when Claude works with files in that directo
 
 - The project `CLAUDE.md` loads automatically. It does **not** need an `@import`.
 - `@path/to/file` imports another file into a CLAUDE.md, to keep it modular.
+- `@import` organises; it does not save context. The imported file loads at launch, together with the CLAUDE.md that imports it. To load a rule only when it is needed, use a `.claude/rules/` file with `paths:`. *(From the Claude Code docs, not the exam guide.)*
+- `CLAUDE.local.md` loading last does not make it win. The files are combined, so a conflict is still a conflict. *(From the Claude Code docs, not the exam guide.)*
 - `.claude/rules/*.md` holds topic files. **With** a `paths:` glob in the frontmatter, a rule loads when Claude reads or edits a matching file. **Without** `paths:`, it loads at launch, like CLAUDE.md.
 - `/memory` shows which memory files are loaded — use it to debug.
 
@@ -454,6 +482,8 @@ The default fix for format and consistency problems. Show 2–4 examples of the 
 - ✅ Messy citations → examples showing each messy variant mapped to the normal form.
 - ✅ Examples of documents with different layouts, so extraction works on all of them.
 
+**Fix at the source.** When detailed instructions still give inconsistent output, add few-shot examples with reasoning. Do not reach first for a linter, rewriter or post-processing step. Exception: a rule plain code can apply with no judgment, that must hold every time (for example, run the formatter on every file written) → a hook. See Rule 1, "Match the mechanism to the stakes".
+
 #### T4.3 — Structured output with tool use and JSON schemas
 
 Use a tool with a JSON schema to get structured output. A schema removes **syntax** errors. It does not remove **meaning** errors (a total that does not add up, a value in the wrong field).
@@ -482,6 +512,7 @@ Use a tool with a JSON schema to get structured output. A schema removes **synta
 - **Retry with the specific error** — the failed output plus what was wrong.
 - **Know when retry cannot help.** If the needed data is *not in the input* (for example, "et al." with the full author list in another document), re-prompting cannot create it. If the data *is* in the input but formatted oddly, a retry with a format hint can work.
 - **Track patterns.** Add a field that records which construct caused a finding, so you can see what is being dismissed.
+- **Rules across several fields need code.** "End date after start date" or "line items add up to the total" compare fields. A JSON schema checks each field, not how fields relate. Check these in validation code (the exam guide names Pydantic) and send the specific error back on the retry.
 
 #### T4.5 — Batch processing
 

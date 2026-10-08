@@ -40,18 +40,18 @@ The question bank's `topic:` field uses slugs that pre-date the syllabus. The ta
 
 ### Current bank coverage vs exam weight
 
-Counted from the `domain:` field of all 85 bank questions (q-001 to q-085):
+Counted from the `domain:` field of all 97 bank questions (q-001 to q-097). 10 of them are multiple-response items (`question_type: mcq-multi`); the other 87 are single-answer:
 
 | Domain | Exam weight | Bank Q's | Share of bank |
 |---|---:|---:|---:|
-| D1 | 27% | 20 | 24% |
-| D2 | 18% | 12 | 14% |
-| D3 | 20% | 13 | 15% |
-| D4 | 20% | 13 | 15% |
-| D5 | 15% | 27 | 32% |
+| D1 | 27% | 25 | 26% |
+| D2 | 18% | 13 | 13% |
+| D3 | 20% | 14 | 14% |
+| D4 | 20% | 16 | 16% |
+| D5 | 15% | 29 | 30% |
 
-- D5 is over-covered. D2, D3 and D4 are a bit thin.
-- Thin task statements: T4.1 (explicit criteria in prompts) has **no** bank question. T1.1, T1.5, T2.3, T3.1, T3.3 and T4.6 have one each. Generate questions for these first.
+- D5 is over-covered. D2 and D3 are the thinnest; D4 is a bit thin.
+- Thin task statements: T1.5 (hooks), T3.3 (path-specific rules), T4.1 (explicit criteria in prompts) and T4.6 (multi-pass review) have one bank question each. Generate questions for these first.
 
 ### Subtopic field
 
@@ -75,4 +75,4 @@ When generating a question, Richard:
 
 ### Domain and task fields
 
-All 85 bank questions have `domain:` and `task:` fields. q-001 to q-060 were tagged by reading what each question actually tests. Use these fields, not the slug, for every progress roll-up.
+All 97 bank questions have `domain:` and `task:` fields. q-001 to q-060 were tagged by reading what each question actually tests. Use these fields, not the slug, for every progress roll-up.

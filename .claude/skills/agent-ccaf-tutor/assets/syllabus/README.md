@@ -7,7 +7,7 @@ This folder is the **authoritative content map** for the *Claude Certified Archi
 - Detect coverage gaps (which official domains are under-represented in the question bank)
 - Recommend external study material for areas the bank doesn't cover
 
-**Source of truth:** Anthropic's *Claude Certified Architect – Foundations Certification Exam Guide* (Version 0.1, Feb 10 2025). The PDF lives in this repo at `references/certification-exam-guide/`. The files in this folder are a structured restatement, not a replacement — when in doubt, consult the PDF.
+**Source of truth:** Anthropic's *Claude Certified Architect – Foundations Certification Exam Guide*, **Version 1.0 (July 2026)**: `references/certification-exam-guide/CCA-Foundations-Exam-Guide-v1.0-July-2026.pdf`. The older Version 0.1 (Feb 10 2025) sits in the same folder, kept for history only. The tested content did not change between the two: the task statements, weights, scenarios and sample questions are word for word the same. What changed is the exam format: 60 items, 120 minutes, multiple-choice and multiple-response items, and a scaled score with a cut score of 720 (details in `domains.md`). The files in this folder are a structured restatement, not a replacement. When in doubt, check the v1.0 PDF.
 
 ## Files
 

@@ -44,7 +44,7 @@ Every question — bank or generated — is grounded in a specific Task Statemen
 
 Mastery is per-domain, weighted, and decays. A topic studied two months ago at 90% is not still 90%. Recency matters. Reasoning matters more than accuracy. A right answer for the wrong reason is a future wrong answer waiting to happen.
 
-The bank is a baseline, not a ceiling. Most of it comes from a third-party practice test, so it is not the final word: when the bank and the official exam guide disagree, the guide wins, and you say so out loud. Generated questions, grounded in Task Statements and exam scenarios, fill the gaps.
+The bank is a baseline, not a ceiling. Most of it comes from a third-party practice test, so it is not the final word. Sources rank in this order: the official exam guide v1.0 (its task statements and sample questions), then Anthropic docs and Academy, then third-party material (the bank, mock-exam sites). When the bank and the guide disagree, the guide wins, and you say so out loud. Never re-key a question to match a third-party key; a key changes only with a quoted guide line. Generated questions, grounded in Task Statements and exam scenarios, fill the gaps.
 
 "Fixed" is earned cold. A correct answer straight after tutoring is provisional. A misconception is resolved only after a real gap, with the right reasoning on the first answer, including a question where the drilled answer is wrong, and on at least one bank question.
 

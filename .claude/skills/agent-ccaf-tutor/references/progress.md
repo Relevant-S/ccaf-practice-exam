@@ -17,7 +17,7 @@ The wrong outcome: a vague reassurance ("you're making good progress!") or a sta
 Adapt to the user's question, but the spine is roughly:
 
 ### 1. Headline read, then a short menu
-Open with one honest sentence about the gap to the target (720, or the user's own target from `BOND.md`). *"Projected ~650, so about 70 points short of 720. The biggest gap is D3 (Claude Code, 20% of the exam) at 40%."*
+Open with one honest sentence about the gap to the target (the exam's cut score of 720, or the user's own target from `BOND.md`). *"Your weighted practice score is about 65%. That is a rough estimate, and it sits below the ~72% that loosely stands in for the 720 cut score. The biggest gap is D3 (Claude Code, 20% of the exam) at 40%."*
 
 Then offer 2–4 next steps as a lettered menu, and wait for a pick:
 
@@ -39,7 +39,12 @@ Pull the data from `TOPICS-MASTERY.md` × `QUESTION-HISTORY.md`. Use the officia
 
 **Count accuracy by the question's `domain:` and `task:` fields, never by its `topic:` slug.** Every bank question and every generated question carries these fields. The slugs mislead: for example, the `claude-code` slug on q-001 to q-060 mostly sits on session resume/fork (D1-T1.7) and built-in tool (D2-T2.5) questions. A learner once showed "100% on D3" from questions that were really D1. If a history row has no task code, look it up in the question file before counting it. Mastery is your judgment call (Solid / Good / Wobbly / Weak / Untested), not just accuracy — factor in recency, depth of practical-task work, and whether they've defended their reasoning or just guessed correctly.
 
-**Compute a projected exam score** as a weighted sum of domain accuracy. Be transparent that this is rough, since the bank doesn't perfectly mirror the real exam, but it's directionally useful. If they're tracking under 720, say so plainly.
+**Compute a weighted practice percent** as a weighted sum of domain accuracy. Call it a rough estimate, never a projected exam score. Two reasons:
+
+- The bank doesn't perfectly mirror the real exam.
+- The real exam reports a **scaled** score from 100 to 1,000, with a cut score of 720. The guide does not say how raw answers turn into that score. So a weighted percent is not the scaled score.
+
+Report it as a percent: *"weighted 85%"*. Never convert it into points (*"≈ 850 of 1,000"*). About 72% is a loose stand-in for the 720 bar, nothing more. If they're tracking under it, say so plainly.
 
 ### 3. Recurring misconceptions
 
@@ -74,7 +79,7 @@ If the user asks a focused question, narrow the response. Don't dump the full pr
 Useful narrow views:
 - **By domain:** *"How am I on D2?"* → mastery, accuracy, recent question history, recurring misconceptions in that domain, recommended next step.
 - **By Task Statement:** *"How am I on hooks?"* → maps to D1-T1.5; pull questions and tutoring sessions touching that task statement specifically.
-- **Exam readiness:** *"Am I ready?"* → projected weighted score vs 720, biggest risks if they sat the exam tomorrow, what would change the most in the least time.
+- **Exam readiness:** *"Am I ready?"* → weighted practice percent vs the rough ~72% bar (a stand-in for the 720 cut score), biggest risks if they sat the exam tomorrow, what would change the most in the least time.
 - **What's stale:** *"What haven't I touched lately?"* → list by last-touched date, weighted by exam weight.
 - **Misconceptions deep dive:** *"What do I keep getting wrong?"* → walk `MISCONCEPTIONS.md` with examples from `QUESTION-HISTORY.md`.
 
@@ -106,7 +111,7 @@ Useful narrow views:
 This capability is itself the surface for many proactive nudges, so suggestions here are about *follow-through:*
 
 - *"Want me to start the D3 tutoring session now? Or schedule a reminder for tomorrow?"* (Wait for the answer; never act.)
-- If exam date is approaching and the projected score is under 720: *"You sit in 5 days. Honestly, the highest-leverage move is X. Want to start it now?"*
+- If exam date is approaching and the weighted practice percent is under the rough ~72% bar: *"You sit in 5 days. Honestly, the highest-leverage move is X. Want to start it now?"*
 
 ## On Honesty
 

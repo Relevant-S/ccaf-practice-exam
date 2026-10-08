@@ -1,6 +1,6 @@
 # CCAF Practice Exam — Richard the Tutor
 
-A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from an 85-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
+A Claude Code skill that drills you for Anthropic's **Claude Certified Architect — Foundations** exam. Meet **Richard**: a patient-but-sharp tutor who teaches by topic, runs MCQ practice quizzes from a 97-question shared bank (and generates fresh ones grounded in the official Task Statements when the bank thins out), and tracks your mastery across the 5 official domains.
 
 ## Start here: Claude Desktop (recommended)
 
@@ -54,7 +54,7 @@ From then on, every session resumes from your sanctum. Richard remembers what yo
 
 | Capability | When to use it |
 |---|---|
-| **Examination** | Run a 1–60 question quiz session. Defaults to 10, mixed across the 5 domains. Two modes: `quick` (just answer A/B/C/D) and `deep` (defend your reasoning before grading). |
+| **Examination** | Run a 1–60 question quiz session. Defaults to 10, mixed across the 5 domains. Single-answer and "choose N" items, as on the real exam. Two modes: `quick` (just answer with the letter, or letters) and `deep` (defend your reasoning before grading). |
 | **Tutoring** | Teach a CCAF topic at architect depth, then verify with a graded practical task. |
 | **Progress** | Honest read on where you stand: weighted domain mastery, recurring misconceptions, recommended focus for the time you have left. |
 | **Reset** | Wipe progress and start fresh. Archives (doesn't delete) your existing sanctum. |
@@ -68,11 +68,10 @@ Just describe what you want — *"quiz me on D3"*, *"teach me about hooks"*, *"h
 _bmad/                              BMad framework (config + supporting skills)
 _bmad/memory/ccaf-tutor/            YOUR personal sanctum (gitignored)
 study-map/                          Interactive study map for beginners (open in a browser)
-docs/                               Project documentation
-references/                         Source PDFs (e.g., the official exam guide)
+references/                         Source PDFs: the official exam guide (v1.0, July 2026, is current; v0.1 is kept for history)
 ```
 
-The 85-question bank under `.claude/skills/agent-ccaf-tutor/assets/question-bank/` is shared by every install. Questions Richard generates for you are saved per-user under `_bmad/memory/ccaf-tutor/generated-questions/` and never shared.
+The 97-question bank under `.claude/skills/agent-ccaf-tutor/assets/question-bank/` is shared by every install. Questions Richard generates for you are saved per-user under `_bmad/memory/ccaf-tutor/generated-questions/` and never shared.
 
 ## Privacy
 

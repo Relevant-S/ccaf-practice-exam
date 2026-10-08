@@ -275,6 +275,8 @@ const TASKS = [
       "<b>A subfolder</b> <code>packages/api/CLAUDE.md</code>: picked up when Claude works with files in that folder.",
       "Keep files small and focused. Pull in other files with <code>@path/to/file.md</code> (paths are relative to the file that imports them).",
       "If two files contradict each other, Claude may follow either one. Remove the conflict; don't expect one file to win.",
+      "<code>CLAUDE.local.md</code> loading last does not make it win. The files are combined, so a conflict is still a conflict. (From the Claude Code docs, not the exam guide.)",
+      "<code>@import</code> pulls the file in at launch. It keeps files organised but does not save context. To load a rule only when needed, use a path-scoped rule file. (From the Claude Code docs, not the exam guide.)",
       "The exam guide names the <code>/memory</code> command for checking which instruction files are loaded in a session."
     ],
     cases: [
@@ -591,9 +593,9 @@ const BASIC_LESSONS = [
     cases: [{ id: "cb8", label: "No one there", scen: 5, title: "“The job waits for input”", situation: "A question says a pipeline job never finishes and the log shows it waiting.", tempting: "Increase the timeout.", works: "Run the step in non-interactive mode (for Claude Code: -p).", why: "Waiting for input means it expects a person, and there isn't one.", trap: "Treating a missing mode as a slowness problem.", labels: ["Misreading", "Right reading"] }],
     checks: [{ id: "kb8", q: "Why can't a pipeline job stop and ask a question?", opts: ["There's no person watching while it runs", "Pipelines forbid text", "Questions cost extra", "It can; it waits for the next push"], a: 0, why: "Pipelines run unattended, so anything that waits for a person hangs." }], docs: [] },
   { id: "b9", code: "B9", step: 9, short: "Reading Qs", name: "Reading exam questions",
-    what: "Every question has one best answer and three {{distractor|distractors}}. The wording carries a lot of the answer. Learn the signal words, and read the question before the options.",
+    what: "Some questions are multiple choice: pick the one best answer. Others are multiple response: the question says how many to choose. The wrong options are {{distractor|distractors}}. The wording carries a lot of the answer. Learn the signal words, and read the question before the options.",
     plain: "Underline the words that set the bar: “first step”, “guarantee”, “root cause”. Then look for the option that meets exactly that bar.",
-    ideas: ["“Most effective first step” → the smallest targeted change at the root cause, not the biggest rebuild.", "“Guarantee”, “must never”, “every time” → enforced by code (a hook, a schema), not by an instruction in the prompt.", "“Root cause” → fix where the problem starts, not the symptom.", "Several options can be partly true. Pick the one that solves the stated problem with the fewest side effects.", "If a flag or setting never appeared in your lessons, be suspicious of it.", "A blank answer counts as wrong and guessing isn't penalised, so always answer."],
+    ideas: ["“Most effective first step” → the smallest targeted change at the root cause, not the biggest rebuild.", "“Guarantee”, “must never”, “every time” → enforced by code (a hook, a schema), not by an instruction in the prompt.", "“Root cause” → fix where the problem starts, not the symptom.", "Several options can be partly true. Pick the one that solves the stated problem with the fewest side effects.", "If a flag or setting never appeared in your lessons, be suspicious of it.", "For choose-N: judge each option true or false on its own, then check you picked exactly N.", "The guide doesn't say how blank answers are scored, so answer every question."],
     why: "Non-developers lose more points on wording than on knowledge.",
     cases: [{ id: "cb9", label: "First step", scen: 1, title: "“The most effective first step”", situation: "An agent picks the wrong tool. Options: add many examples to the prompt, rewrite the tool descriptions, build a routing layer, or merge the tools.", tempting: "The routing layer: it sounds the most thorough.", works: "Rewrite the tool descriptions. They are how Claude chooses tools, so this fixes the root cause with little effort.", why: "“First step” asks for the targeted, low-effort fix. This is a sample question from the official exam guide.", trap: "Ignoring the words “first step”.", labels: ["Misreading", "Right reading"] }],
     checks: [{ id: "kb9", q: "A question says a rule “must never be broken”. Which kind of answer usually fits?", opts: ["A clearer instruction in the prompt", "Code that enforces it, such as a hook", "Asking Claude to be careful", "A longer system prompt"], a: 1, why: "“Must never” asks for a guarantee, and only code gives one." }], docs: [] }
@@ -657,6 +659,7 @@ const TASKS_D1 = [
     why: "Questions describe a task and ask which way to split it. The clue is whether the steps are known before you start.",
     ideas: [
       "Steps known and predictable? Use a fixed chain. Example: review each file on its own, then do one pass across files.",
+      "Known steps that depend on each other, like collect → analyze → report: a fixed pipeline, each output feeding the next.",
       "Open-ended, where each finding changes the next step? Let the plan adapt as you go.",
       "One huge review in one pass spreads attention thin. Issues get missed. The guide calls this attention dilution.",
       "For a big unknown job: first map the structure, then find the high-impact areas, then make a prioritised plan that changes as you learn.",
@@ -742,6 +745,7 @@ const TASKS_D1 = [
     ideas: [
       "To spawn subagents, the coordinator's <code>allowedTools</code> must include <code>\"Task\"</code>. Naming subagents in the prompt is not enough.",
       "Subagents do not inherit the parent's context and do not share memory between runs. Pass complete findings in the prompt.",
+      "Running agents one after another does not pass data between them. The later agent still sees only what is in its own prompt.",
       "Pass data in a structured form that keeps content apart from its metadata: source URL, document name, page number. Then citations survive.",
       "For parallel work, the coordinator asks for several Task calls in one response, not one per turn.",
       "Tell subagents the goal and the quality bar, not a step-by-step recipe. They can then adapt to what they find."
@@ -786,6 +790,7 @@ const TASKS_D1 = [
       "Prompt guidance = usually followed. Code enforcement ({{hook|hooks}}, prerequisite gates) = always followed.",
       "When one miss is unacceptable, such as money moving without identity checks, use code. Prompts have a non-zero failure rate.",
       "Example gate: block <code>process_refund</code> until <code>get_customer</code> has returned a verified customer ID.",
+      "Match the mechanism to the stakes. Not every guideline needs a hook. Ask two questions: can plain code check it with no judgment? Must it hold every single time? Two yeses → a hook or gate. Otherwise a prompt line, clear criteria or examples are enough.",
       "Fuzzy judgement calls, like when to {{escalation|escalate}}, stay as plain-language criteria the model applies case by case.",
       "A human taking over cannot see the transcript. Give them customer ID, root cause, amount, and recommended action.",
       "A request with several problems: split it into separate items, look into each (in parallel, with shared context), then give one combined answer."
@@ -829,6 +834,7 @@ const TASKS_D1 = [
       "Block a tool call before it runs: PreToolUse with a deny decision. The guide calls this tool call interception.",
       "After blocking, redirect to another path, such as escalating to a human.",
       "PostToolUse runs after the tool. It can normalise or transform results and add feedback. It cannot stop the call; that already happened.",
+      "Pre or Post? Ask: is the damage done the moment the tool runs? Then it must be PreToolUse. Use PostToolUse when you need what the tool produced.",
       "Normalising example: one tool gives Unix timestamps (a count of seconds since 1970), another ISO 8601 dates (text like 2026-10-08T14:00Z), a third numeric status codes. A PostToolUse hook turns them all into one format.",
       "Rule of thumb: prompt = persuasion, works most of the time. Hook = enforcement, works every time. Match it to how bad a miss would be."
     ],
@@ -872,7 +878,8 @@ const TASKS_D1 = [
       "Fork to try two approaches from the same starting analysis. It is an option you add when resuming: <code>fork_session</code> in the Agent SDK (Python; <code>forkSession</code> in TypeScript), <code>--fork-session</code> in the CLI.",
       "After you change files, tell the resumed session exactly which files changed, so it re-checks only those.",
       "If old tool results are stale, start a new session and inject a structured summary. Then make fresh tool calls.",
-      "Why not resume anyway? The stale results stay in context and can mislead the model."
+      "Why not resume anyway? The stale results stay in context and can mislead the model.",
+      "A polluted coding session (several failed attempts, files changed by a teammate's push): start fresh, inject a summary of what you found and what failed, then re-read the current files. A fork would copy the clutter. A blank session loses the lessons."
     ],
     drift: "How names work today: in the Claude Code CLI you name a session with <code>--name</code> (<code>-n</code>) or <code>/rename</code>, and <code>--resume</code> (<code>-r</code>) accepts either that name or the session ID. In the Agent SDK, the <code>resume</code> option takes a session ID, not a name. For the exam, answer “<code>--resume &lt;session-name&gt;</code>”.",
     cases: [
@@ -1269,7 +1276,8 @@ const TASKS_D4 = [
       "Show the reasoning: why this action was chosen over a plausible alternative. Then the model can generalise to new cases it has never seen.",
       "Show the exact output format, for example location, issue, severity and suggested fix. Every finding then comes out the same way.",
       "Include an example of acceptable code next to a real issue. This cuts {{false positive|false alarms}}.",
-      "For extraction, show documents with different layouts. This cuts made-up values and empty fields when a layout is unusual."
+      "For extraction, show documents with different layouts. This cuts made-up values and empty fields when a layout is unusual.",
+      "Fix it at the source. Add examples before adding a linter or a clean-up step afterwards. A clean-up hook fits only a rule plain code can apply every time, such as running a formatter."
     ],
     cases: [
       { id: "c4.2a", label: "Uneven findings", scen: 5, title: "Findings come out in a different shape each time",
@@ -1353,7 +1361,8 @@ const TASKS_D4 = [
       "Retries help with format mismatches and structural mistakes. They do not help when the information is missing, for example when it lives in another document you did not provide.",
       "Extract <code>calculated_total</code> next to <code>stated_total</code>. If they differ, flag it. Add a <code>conflict_detected</code> true/false field when the source contradicts itself.",
       "Add a <code>detected_pattern</code> field to each review finding. When developers dismiss findings, you can see which patterns cause the false alarms.",
-      "Schema syntax errors are gone with tool use. Meaning errors, like totals that do not add up or values in the wrong field, still need your own checks."
+      "Schema syntax errors are gone with tool use. Meaning errors, like totals that do not add up or values in the wrong field, still need your own checks.",
+      "Rules across several fields, like “end date after start date”, need validation code (the guide names Pydantic). A JSON schema checks each field, not how fields relate. Send the code's error back on the retry."
     ],
     cases: [
       { id: "c4.4a", label: "Bare retry", scen: 6, title: "The retry just repeats the request",
@@ -1875,7 +1884,7 @@ const TRACKS = {
 
 /* ---------- State ---------- */
 // Bump when the page changes, so Richard knows to republish a learner's copy.
-const MAP_VERSION = "2026-10-08h";
+const MAP_VERSION = "2026-10-08i";
 const STORE_KEY = "ccaf-study-map-v1";
 let progress = { read: {}, cases: {}, checks: {}, profile: null, skipped: false };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) progress = Object.assign(progress, JSON.parse(raw)); } catch (e) {}
@@ -2289,9 +2298,11 @@ function rootHtml() {
   <div><div class="eyebrow"><span>The exam</span></div><h2>What the CCAF exam tests</h2></div>
   <section><p>The Claude Certified Architect – Foundations exam checks whether you can make sound design decisions when you build real products with Claude. It covers four technologies: Claude Code, the Claude Agent SDK, the Claude API and {{mcp}}. It asks about judgment more than about memorised facts.</p></section>
   <section><h3>How the exam works</h3><ul>
-    <li>Every question is multiple choice: one right answer and three {{distractor|distractors}}.</li>
+    <li>60 questions in 120 minutes: about 2 minutes each.</li>
+    <li>Two kinds of question: multiple choice (pick one) and multiple response (pick several). Each question says how many to choose. The wrong options are {{distractor|distractors}}.</li>
     <li>Questions are grouped around realistic scenarios. You get 4 of the 6 scenarios on this map, picked at random.</li>
-    <li>The result is pass or fail, based on a scaled score. A blank answer counts as wrong, and there is no penalty for guessing, so always answer.</li>
+    <li>Scores run from 100 to 1,000, and the pass mark is 720. This is a scaled score, not a percentage. The report shows pass or fail, plus your percentage correct in each domain.</li>
+    <li>The guide doesn't say how blank answers are scored, so answer every question.</li>
     <li>The ideal candidate has about 6 months of hands-on work with these tools. This map is for people who don't, yet.</li>
   </ul></section>
   <section><h3>The five domains</h3><p class="note">Bar length shows each domain's share of the exam. Select one to open it.</p><div class="weights">${weights}</div></section>
